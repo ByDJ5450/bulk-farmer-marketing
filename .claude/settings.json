@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3)",
+      "WebFetch(domain:www.youtube.com)",
+      "Bash(yt-dlp --version)",
+      "Bash(yt-dlp --flat-playlist --print \"%\\(title\\)s|%\\(view_count\\)s|%\\(upload_date\\)s|%\\(duration_string\\)s|%\\(id\\)s\" \"https://www.youtube.com/@bulk_farmer/videos\")",
+      "Bash(yt-dlp --flat-playlist --print \"%\\(title\\)s|%\\(view_count\\)s|%\\(upload_date\\)s|%\\(duration_string\\)s|%\\(id\\)s\" \"https://www.youtube.com/@bulk_farmer\")",
+      "Bash(yt-dlp --no-check-certificate --flat-playlist --print \"%\\(title\\)s|%\\(view_count\\)s|%\\(upload_date\\)s|%\\(duration_string\\)s|%\\(id\\)s\" \"https://www.youtube.com/@bulk_farmer\")",
+      "Read(//Users/idongjin/.claude/plugins/cache/anthropic-agent-skills/document-skills/d230a6dd6eb1/skills/pptx/**)",
+      "Bash(npm list *)",
+      "Bash(export PATH=\"/usr/local/bin:/opt/homebrew/bin:$PATH\")",
+      "Read(//usr/local/**)",
+      "Read(//Applications/**)",
+      "Read(//Users/idongjin/**)",
+      "Bash(claude mcp *)",
+      "Bash(python3 -c ' *)",
+      "Read(//opt/homebrew/**)",
+      "Bash(curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh)",
+      "Bash(bash)",
+      "mcp__nanobanana__generate_image",
+      "WebSearch",
+      "WebFetch(domain:vling.net)",
+      "WebFetch(domain:playboard.co)",
+      "WebFetch(domain:www.noxinfluencer.com)",
+      "WebFetch(domain:commentpicker.com)",
+      "WebFetch(domain:blog.fikad.boo)",
+      "WebFetch(domain:outlierkit.com)",
+      "WebFetch(domain:www.jamful.co)",
+      "WebFetch(domain:v.daum.net)",
+      "Skill(schedule)",
+      "Skill(schedule:*)",
+      "Bash(gh auth *)",
+      "Bash(git --version)",
+      "Bash(brew install *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  },
+  "enabledPlugins": {
+    "document-skills@anthropic-agent-skills": true
+  }
+}
