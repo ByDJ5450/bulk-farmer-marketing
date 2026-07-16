@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>멸치 탈출 벌크업 스타터 가이드</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { font-family: 'Noto Sans CJK KR', sans-serif; color: #1A1A1A; }
+  @page { size: A4 portrait; margin: 0; }
+  .page {
+    width: 210mm; height: 296.5mm;
+    page-break-after: always;
+    padding: 24mm 22mm;
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .green { background: #5B9B75; }
+  .pink  { background: #F2B5A0; }
+  .white-t { color: #FFFFFF; }
+  .red   { color: #E03030; }
+
+  .kicker { font-size: 13pt; font-weight: 700; letter-spacing: 0.15em; margin-bottom: 10mm; opacity: 0.85; }
+  h1 { font-weight: 900; font-size: 40pt; line-height: 1.25; letter-spacing: -0.02em; }
+  h2 { font-weight: 900; font-size: 30pt; line-height: 1.3; letter-spacing: -0.02em; margin-bottom: 10mm; }
+  p  { font-size: 15pt; line-height: 1.75; font-weight: 500; }
+  .lead { font-size: 17pt; font-weight: 700; line-height: 1.7; }
+  .small { font-size: 11.5pt; opacity: 0.8; }
+
+  .badge {
+    display: inline-block; background: #1A1A1A; color: #fff;
+    font-weight: 900; font-size: 12pt; padding: 3mm 7mm; border-radius: 100px;
+    margin-bottom: 12mm; letter-spacing: 0.08em;
+  }
+  .badge-w { background: #FFFFFF; color: #1A1A1A; }
+
+  .pagenum {
+    position: absolute; bottom: 12mm; right: 22mm;
+    font-size: 10pt; font-weight: 700; opacity: 0.6;
+  }
+  .brand {
+    position: absolute; bottom: 12mm; left: 22mm;
+    font-size: 10pt; font-weight: 900; opacity: 0.6; letter-spacing: 0.1em;
+  }
+
+  .bignum { font-weight: 900; font-size: 90pt; line-height: 1; letter-spacing: -0.03em; }
+  .arrow { font-weight: 900; font-size: 44pt; margin: 0 6mm; }
+
+  .card {
+    background: #FFFFFF; border-radius: 6mm; padding: 10mm 12mm; margin-top: 8mm;
+  }
+  .card p { font-size: 13.5pt; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 8mm; background: #fff; border-radius: 4mm; overflow: hidden; }
+  th { background: #1A1A1A; color: #fff; font-weight: 900; font-size: 13pt; padding: 5mm 6mm; text-align: left; }
+  td { font-size: 12.5pt; font-weight: 500; padding: 4.5mm 6mm; border-bottom: 1.2pt solid #EEE; line-height: 1.5; }
+  td:first-child { font-weight: 900; white-space: nowrap; width: 28mm; }
+
+  ol.steps { list-style: none; counter-reset: st; margin-top: 4mm; }
+  ol.steps li {
+    counter-increment: st; background: #fff; border-radius: 5mm;
+    padding: 7mm 9mm 7mm 24mm; margin-bottom: 5mm; position: relative;
+    font-size: 13.5pt; font-weight: 500; line-height: 1.55;
+  }
+  ol.steps li::before {
+    content: counter(st); position: absolute; left: 7mm; top: 50%; transform: translateY(-50%);
+    width: 11mm; height: 11mm; background: #E03030; color: #fff; border-radius: 50%;
+    font-weight: 900; font-size: 13pt; display: flex; align-items: center; justify-content: center;
+  }
+  ol.steps b { font-weight: 900; }
+
+  .check { display: flex; align-items: flex-start; gap: 5mm; background: #fff; border-radius: 5mm; padding: 7mm 9mm; margin-bottom: 5mm; }
+  .box { width: 8mm; height: 8mm; border: 2.2pt solid #1A1A1A; border-radius: 2mm; flex-shrink: 0; margin-top: 1mm; }
+  .check p { font-size: 13.5pt; font-weight: 700; }
+
+  .quote { background: rgba(255,255,255,0.92); border-left: 4mm solid #E03030; border-radius: 3mm; padding: 6mm 9mm; margin-bottom: 6mm; }
+  .quote p { font-size: 14pt; font-weight: 700; }
+
+  .cta-btn {
+    display: block; background: #E03030; color: #fff; text-align: center;
+    font-size: 19pt; font-weight: 900; padding: 9mm; border-radius: 100px; margin-top: 12mm;
+  }
+  .divider-num { font-weight: 900; font-size: 130pt; line-height: 1; opacity: 0.25; margin-bottom: 4mm; }
+</style>
+</head>
+<body>
+
+<!-- 1. 표지 -->
+<div class="page green">
+  <p class="kicker white-t">벌크농부 무료 가이드</p>
+  <h1 class="white-t">멸치 탈출<br>벌크업<br>스타터 가이드</h1>
+  <p class="lead white-t" style="margin-top:14mm;">55kg 멸치에서 88kg까지.<br>벌크업, 오늘 방향부터 잡아드립니다.</p>
+  <div class="brand white-t">벌크농부</div>
+</div>
+
+<!-- 2. 스토리 1 -->
+<div class="page pink">
+  <span class="badge">제 이야기부터 하겠습니다</span>
+  <h2>181cm 55kg.<br>별명은 <span class="red">'멸치'</span>였습니다.</h2>
+  <p>거울을 볼 때마다 자신이 없었고,<br>승무원이라는 꿈도 "마른 사람이라 안 돼"라는<br>말에 포기했습니다.</p>
+  <p style="margin-top:7mm;">무작정 헬스장에 등록했지만<br>1년 가까이 체중은 그대로였습니다.</p>
+  <p style="margin-top:7mm;"><b>운동만 열심히 하면 되는 줄 알았으니까요.</b></p>
+  <div class="brand">벌크농부</div><div class="pagenum">02</div>
+</div>
+
+<!-- 3. 스토리 2 -->
+<div class="page green">
+  <span class="badge badge-w">원리를 이해하고 나서 2년</span>
+  <div style="display:flex; align-items:baseline; margin-bottom:10mm;">
+    <span class="bignum white-t">55</span><span class="arrow white-t">→</span><span class="bignum" style="color:#E03030;">88</span><span class="white-t" style="font-size:24pt;font-weight:900;">kg</span>
+  </div>
+  <p class="lead white-t">K-Classic 클래식 피지크 대회 3위.</p>
+  <p class="white-t" style="margin-top:8mm;">타고난 몸은 없습니다.<br>이 가이드는 제가 55kg 시절의 저에게<br>쥐여주고 싶었던, 딱 그 내용입니다.</p>
+  <div class="brand white-t">벌크농부</div><div class="pagenum white-t">03</div>
+</div>
+
+<!-- 4. 파트1 디바이더 -->
+<div class="page pink">
+  <div class="divider-num">01</div>
+  <h1>벌크업이 안 되는<br>진짜 이유 <span class="red">3가지</span></h1>
+  <p class="lead" style="margin-top:10mm;">1년을 운동해도 몸이 안 변했다면,<br>체질이 아니라 이 셋 중 하나입니다.</p>
+  <div class="brand">벌크농부</div><div class="pagenum">04</div>
+</div>
+
+<!-- 5. 이유 1 -->
+<div class="page green">
+  <span class="badge badge-w">이유 ①</span>
+  <h2 class="white-t">생각보다 훨씬<br><span style="color:#E03030;">적게</span> 먹고 있다</h2>
+  <div class="card">
+    <p>"저는 많이 먹는데요?"라고 말하는 분들의 실제 섭취량을 기록해보면, 대부분 하루 필요량보다 <b>500~1,000kcal 부족</b>합니다.</p>
+    <p style="margin-top:5mm;"><b>느낌이 아니라 숫자로 확인해야 합니다.</b></p>
+  </div>
+  <div class="brand white-t">벌크농부</div><div class="pagenum white-t">05</div>
+</div>
+
+<!-- 6. 이유 2 -->
+<div class="page pink">
+  <span class="badge">이유 ②</span>
+  <h2>운동이 자극이 아니라<br><span class="red">소모</span>로 끝난다</h2>
+  <div class="card">
+    <p>머신 10가지를 도는 것보다 바벨 복합 운동 몇 가지에 집중하는 것이 근육에는 훨씬 강한 성장 신호입니다.</p>
+    <p style="margin-top:5mm;"><b>운동은 '자극', 식단은 '재료' — 둘 다 필수입니다.</b></p>
+  </div>
+  <div class="brand">벌크농부</div><div class="pagenum">06</div>
+</div>
+
+<!-- 7. 이유 3 -->
+<div class="page green">
+  <span class="badge badge-w">이유 ③</span>
+  <h2 class="white-t"><span style="color:#E03030;">기록</span>하지 않는다</h2>
+  <div class="card">
+    <p>지난주보다 무게가 올랐는지, 체중이 늘고 있는지 모르면 방향 없이 걷는 것과 같습니다.</p>
+    <p style="margin-top:5mm;"><b>기록 없는 노력은 쌓이지 않습니다.</b></p>
+  </div>
+  <div class="brand white-t">벌크농부</div><div class="pagenum white-t">07</div>
+</div>
+
+<!-- 8. 파트2 — TDEE -->
+<div class="page pink">
+  <div class="divider-num">02</div>
+  <h2>내 하루 목표 칼로리<br>계산하기 <span class="red">3단계</span></h2>
+  <ol class="steps">
+    <li><b>기초대사량(BMR)</b> = 체중(kg) × 24<br><span class="small">예) 60kg × 24 = 1,440kcal</span></li>
+    <li><b>하루 총 소비량(TDEE)</b> = BMR × 활동 계수<br><span class="small">좌식+주3회 운동 ×1.5 / 활동적+주4회 이상 ×1.7 → 예) 1,440 × 1.5 = 2,160kcal</span></li>
+    <li><b>벌크업 목표</b> = TDEE + 300~500kcal <span class="red" style="font-weight:900;">(칼로리 잉여)</span><br><span class="small">예) 2,160 + 400 = 약 2,560kcal</span></li>
+  </ol>
+  <div class="brand">벌크농부</div><div class="pagenum">08</div>
+</div>
+
+<!-- 9. 목표 적기 -->
+<div class="page green">
+  <span class="badge badge-w">지금 계산해서 적어두세요</span>
+  <h2 class="white-t">벌크업의 출발점은<br>운동이 아니라 <span style="color:#E03030;">이 숫자</span>입니다</h2>
+  <div class="card">
+    <p style="font-size:16pt;">내 목표 칼로리 &nbsp;<b style="border-bottom:2.5pt solid #1A1A1A; padding:0 16mm;">&nbsp;</b>&nbsp; kcal</p>
+    <p style="font-size:16pt; margin-top:8mm;">내 목표 단백질 &nbsp;<b style="border-bottom:2.5pt solid #1A1A1A; padding:0 16mm;">&nbsp;</b>&nbsp; g</p>
+  </div>
+  <p class="white-t" style="margin-top:8mm;">단백질은 <b>하루 총량 기준 체중×1.6~2.2g</b>을 확보하세요.<br><span class="small">예: 60kg → 하루 96g 이상. 섭취 타이밍보다 하루 총량이 훨씬 중요합니다.</span></p>
+  <div class="brand white-t">벌크농부</div><div class="pagenum white-t">09</div>
+</div>
+
+<!-- 10. 식단 기본형 -->
+<div class="page pink">
+  <span class="badge">하루 식단 템플릿 ①</span>
+  <h2>기본형 <span class="small" style="font-weight:700;">약 2,600kcal / 단백질 약 130g</span></h2>
+  <table>
+    <tr><th>끼니</th><th>구성</th></tr>
+    <tr><td>아침</td><td>귀리 60g + 우유 300ml + 바나나 1개 + 땅콩버터 1스푼</td></tr>
+    <tr><td>점심</td><td>밥 1.5공기 + 닭다리살 150g + 채소</td></tr>
+    <tr><td>간식</td><td>달걀 3개 + 고구마 1개</td></tr>
+    <tr><td>저녁</td><td>밥 1공기 + 소고기 또는 생선 150g + 채소</td></tr>
+    <tr><td>취침 전</td><td>우유 300ml 또는 그릭요거트</td></tr>
+  </table>
+  <div class="brand">벌크농부</div><div class="pagenum">10</div>
+</div>
+
+<!-- 11. 식단 저예산형 -->
+<div class="page green">
+  <span class="badge badge-w">하루 식단 템플릿 ②</span>
+  <h2 class="white-t">저예산형 <span class="small white-t" style="font-weight:700;">약 2,500kcal / 식비 최소화</span></h2>
+  <table>
+    <tr><th>끼니</th><th>구성</th></tr>
+    <tr><td>아침</td><td>귀리 60g + 두유 400ml + 바나나 1개</td></tr>
+    <tr><td>점심</td><td>밥 1.5공기 + 달걀 4개 + 김치</td></tr>
+    <tr><td>간식</td><td>고구마 2개 + 두유 200ml</td></tr>
+    <tr><td>저녁</td><td>밥 1공기 + 닭가슴살 또는 두부 200g + 채소</td></tr>
+  </table>
+  <p class="white-t" style="margin-top:8mm;">포인트는 완벽한 식단이 아니라 <b>매일 목표 칼로리를 채우는 것.</b><br><span class="small">보충제는 부족할 때 채우는 보조 수단입니다. 필수가 아닙니다.</span></p>
+  <div class="brand white-t">벌크농부</div><div class="pagenum white-t">11</div>
+</div>
+
+<!-- 12. 운동 7가지 -->
+<div class="page pink">
+  <div class="divider-num">03</div>
+  <h2>운동은 <span class="red">7가지</span>면<br>충분합니다</h2>
+  <div class="card">
+    <p style="font-size:15.5pt; font-weight:900; line-height:2.1;">
+      1. 벤치프레스 &nbsp;&nbsp; 2. 스쿼트<br>
+      3. 데드리프트 &nbsp;&nbsp; 4. 바벨로우<br>
+      5. OHP &nbsp;&nbsp; 6. 풀업 &nbsp;&nbsp; 7. 딥스
+    </p>
+  </div>
+  <p style="margin-top:8mm;">벌크업에 필요한 운동은 생각보다 적습니다.<br><b>이 7가지가 전부입니다.</b></p>
+  <div class="brand">벌크농부</div><div class="pagenum">12</div>
+</div>
+
+<!-- 13. 주4회 루틴 -->
+<div class="page green">
+  <span class="badge badge-w">초보자 추천 루틴</span>
+  <h2 class="white-t">주 4회 상하 분할</h2>
+  <table>
+    <tr><th>요일</th><th>부위</th><th>운동</th></tr>
+    <tr><td>월</td><td>상체</td><td>벤치프레스 / 바벨로우 / OHP</td></tr>
+    <tr><td>화</td><td>하체</td><td>스쿼트 / 데드리프트</td></tr>
+    <tr><td>목</td><td>상체</td><td>벤치프레스 / 풀업 / 딥스</td></tr>
+    <tr><td>금</td><td>하체</td><td>스쿼트 / 데드리프트</td></tr>
+  </table>
+  <p class="white-t" style="margin-top:8mm;">각 운동 3~4세트, 6~12회.<br>지난주보다 무게나 횟수를 조금씩 올리는 것<span style="font-weight:900;">(점진적 과부하)</span>이 핵심.<br><span class="small">같은 부위는 48시간 회복 후 다시 자극합니다.</span></p>
+  <div class="brand white-t">벌크농부</div><div class="pagenum white-t">13</div>
+</div>
+
+<!-- 14. 4주 체크리스트 -->
+<div class="page pink">
+  <span class="badge">매일 이 4개만</span>
+  <h2>첫 <span class="red">4주</span> 체크리스트</h2>
+  <div class="check"><div class="box"></div><p>목표 칼로리 ±200kcal 안에서 먹었다</p></div>
+  <div class="check"><div class="box"></div><p>단백질 하루 총량을 채웠다</p></div>
+  <div class="check"><div class="box"></div><p>운동한 날: 운동명 + 무게 + 세트×횟수 기록</p></div>
+  <div class="check"><div class="box"></div><p>아침 공복 체중 기록 (주간 평균으로 판단)</p></div>
+  <p style="margin-top:7mm;"><b>4주 뒤:</b> 체중 주간 평균 +0.5~1kg 또는 운동 무게·횟수 상승 —<br>둘 중 하나라도 움직였다면 <b class="red">방향이 맞는 겁니다.</b> 그대로 가면 됩니다.</p>
+  <div class="brand">벌크농부</div><div class="pagenum">14</div>
+</div>
+
+<!-- 15. 막히는 지점 -->
+<div class="page green">
+  <span class="badge badge-w">그런데, 4주쯤 실행하면</span>
+  <h2 class="white-t">반드시 이런 질문이<br>생깁니다</h2>
+  <div class="quote"><p>"체중이 안 늘어요. 얼마나 더 먹어야 하죠?"</p></div>
+  <div class="quote"><p>"이 자세가 맞는 건지 모르겠어요."</p></div>
+  <div class="quote"><p>"직장 다니면서 이 식단이 안 지켜져요."</p></div>
+  <p class="white-t" style="margin-top:7mm;">저는 이 지점을 <b>1년 넘게 혼자 헤맸습니다.</b><br>그 시간을 줄여드리는 게 제 코칭이 하는 일입니다.</p>
+  <div class="brand white-t">벌크농부</div><div class="pagenum white-t">15</div>
+</div>
+
+<!-- 16. CTA -->
+<div class="page pink">
+  <span class="badge">부담 없는 진단 자리입니다</span>
+  <h2>무료 전략 상담에서는</h2>
+  <ol class="steps">
+    <li>현재 식사·운동 기록 기준으로 <b>지금 상태를 진단</b>하고</li>
+    <li>목표까지의 <b>갭을 숫자로</b> 보여드리고</li>
+    <li>혼자 갈 때와 함께 갈 때의 <b>로드맵을 비교</b>해드립니다</li>
+  </ol>
+  <p style="margin-top:5mm;"><b>결제 권유 없이 진단만 받고 가셔도 됩니다.</b></p>
+  <div class="cta-btn">무료 전략 상담 신청 → 프로필 링크</div>
+  <p class="lead" style="margin-top:10mm; text-align:center;">55kg의 저도 했습니다. 당신도 할 수 있습니다.</p>
+  <p style="text-align:center; margin-top:4mm; font-weight:900;">— 벌크농부 드림</p>
+  <div class="brand">벌크농부</div><div class="pagenum">16</div>
+</div>
+
+</body>
+</html>
