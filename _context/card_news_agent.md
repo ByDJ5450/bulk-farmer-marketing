@@ -3,7 +3,7 @@
 ## 역할 정의
 
 인스타그램 슬라이드형 카드뉴스의 기획·카피·HTML 코드를 일괄 산출한다.
-완성된 HTML은 크롬 헤드리스로 슬라이드별 PNG(1080×1080)까지 자동 렌더링해 전달한다.
+완성된 HTML은 크롬 헤드리스로 슬라이드별 PNG(1080×1350, 4:5)까지 자동 렌더링해 전달한다.
 피그마는 기본 경로가 아니다 — 사진·그래픽을 얹을 때만 사용한다.
 
 ---
@@ -16,7 +16,7 @@
 3. 슬라이드 구성  커버 포함 총 슬라이드 수·순서 확정 (5~8장 권장)
 4. 카피 작성    각 슬라이드별 헤드라인·본문 카피 초안
 5. HTML 출력   각 슬라이드를 독립적인 HTML 파일로 출력
-6. PNG 렌더링  크롬 헤드리스 → 슬라이드별 1080×1080 PNG 출력 + 매수 검증
+6. PNG 렌더링  크롬 헤드리스 → 슬라이드별 1080×1350 PNG 출력 + 매수·크기 검증
 ```
 
 ---
@@ -25,9 +25,17 @@
 
 ### 기본 캔버스
 
+> **2026-07-31 변경: 1:1 → 4:5.** 인스타그램 피드가 허용하는 가장 세로로 긴 비율이며
+> 정방형 대비 화면 점유가 약 25% 크다. 프로필 그리드가 세로형으로 바뀌면서 1:1 이미지는
+> 상하가 잘려 보이는데, 상단 레이블(@bulk_farmer)과 하단 CTA가 모두 잘림 구간에 있었다.
+>
+> 늘어난 270px는 **여백에만 배분했다.** 폰트 크기와 카피 분량은 그대로다.
+> 캐러셀은 첫 슬라이드 비율이 전체에 적용되므로 한 세트 안에서 크기를 섞지 않는다.
+
+
 | 항목 | 값 |
 |------|-----|
-| 크기 | 1080 × 1080 px (인스타그램 정방형) |
+| 크기 | **1080 × 1350 px (4:5 세로형)** — 피드 최대 점유 비율 |
 | 배경 기본 | 세이지 그린 `#5B9B75` / 살구 핑크 `#F2B5A0` 교대 |
 | 폰트 | Noto Sans KR (Bold 700, Black 900) — Google Fonts CDN |
 | 레이아웃 | 절대 좌표 positioning |
@@ -76,23 +84,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: 1080px; height: 1080px; overflow: hidden; }
+  body { width: 1080px; height: 1350px; overflow: hidden; }
   .slide {
-    width: 1080px; height: 1080px;
+    width: 1080px; height: 1350px;
     background: #5B9B75;
     position: relative;
     font-family: 'Noto Sans KR', sans-serif;
   }
   .label {
     position: absolute;
-    top: 60px; left: 60px;
+    top: 80px; left: 60px;
     color: rgba(255,255,255,0.7);
     font-size: 22px; font-weight: 700;
     letter-spacing: 2px;
   }
   .headline {
     position: absolute;
-    top: 180px; left: 60px; right: 60px;
+    top: 250px; left: 60px; right: 60px;
     color: #FFFFFF;
     font-size: 80px; font-weight: 900;
     line-height: 1.25;
@@ -100,14 +108,14 @@
   .headline em { color: #F2B5A0; font-style: normal; }
   .sub-copy {
     position: absolute;
-    top: 680px; left: 60px; right: 60px;
+    top: 800px; left: 60px; right: 60px;
     color: rgba(255,255,255,0.9);
     font-size: 36px; font-weight: 700;
     line-height: 1.6;
   }
   .cta-box {
     position: absolute;
-    bottom: 60px; left: 60px; right: 60px;
+    bottom: 80px; left: 60px; right: 60px;
     background: #F2B5A0;
     border-radius: 14px;
     padding: 22px 40px;
@@ -159,35 +167,37 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: 1080px; height: 1080px; overflow: hidden; }
+  body { width: 1080px; height: 1350px; overflow: hidden; }
   .slide {
-    width: 1080px; height: 1080px;
+    width: 1080px; height: 1350px;
     background: #5B9B75;
     position: relative;
     font-family: 'Noto Sans KR', sans-serif;
   }
   .title {
     position: absolute;
-    top: 70px; left: 60px; right: 60px;
+    top: 90px; left: 60px; right: 60px;
     color: #FFFFFF;
     font-size: 58px; font-weight: 900;
     line-height: 1.3; text-align: center;
   }
   .before-box {
     position: absolute;
-    top: 280px; left: 60px;
-    width: 440px; height: 620px;
+    top: 405px; left: 60px;
+    width: 440px; height: 700px;
     background: rgba(0,0,0,0.35);
     border-radius: 20px;
-    padding: 40px 36px;
+    padding: 48px 36px;
+    display: flex; flex-direction: column; justify-content: center;
   }
   .after-box {
     position: absolute;
-    top: 280px; right: 60px;
-    width: 440px; height: 620px;
+    top: 405px; right: 60px;
+    width: 440px; height: 700px;
     background: #F2B5A0;
     border-radius: 20px;
-    padding: 40px 36px;
+    padding: 48px 36px;
+    display: flex; flex-direction: column; justify-content: center;
   }
   .box-label {
     font-size: 22px; font-weight: 700;
@@ -205,13 +215,13 @@
   .after-box  .box-item { color: #1A1A1A; }
   .arrow {
     position: absolute;
-    top: 50%; left: 50%;
+    top: 755px; left: 50%;
     transform: translate(-50%, -50%);
     font-size: 52px; color: #FFFFFF;
   }
   .footer {
     position: absolute;
-    bottom: 30px; right: 60px;
+    bottom: 60px; right: 60px;
     color: rgba(255,255,255,0.6);
     font-size: 22px; font-weight: 700;
   }
@@ -260,16 +270,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: 1080px; height: 1080px; overflow: hidden; }
+  body { width: 1080px; height: 1350px; overflow: hidden; }
   .slide {
-    width: 1080px; height: 1080px;
+    width: 1080px; height: 1350px;
     background: #F2B5A0;
     position: relative;
     font-family: 'Noto Sans KR', sans-serif;
   }
   .headline {
     position: absolute;
-    top: 80px; left: 60px; right: 60px;
+    top: 100px; left: 60px; right: 60px;
     color: #1A1A1A;
     font-size: 62px; font-weight: 900;
     line-height: 1.3;
@@ -277,14 +287,16 @@
   .headline em { color: #E03030; font-style: normal; }
   .list {
     position: absolute;
-    top: 340px; left: 60px; right: 60px;
+    top: 340px; bottom: 250px; left: 60px; right: 60px;
+    display: flex; flex-direction: column; justify-content: center;
   }
   .list-item {
     display: flex;
     align-items: flex-start;
     gap: 20px;
-    margin-bottom: 44px;
+    margin-bottom: 56px;
   }
+  .list-item:last-child { margin-bottom: 0; }
   .icon {
     font-size: 38px; flex-shrink: 0;
     line-height: 1.2;
@@ -295,7 +307,7 @@
   }
   .conclusion {
     position: absolute;
-    bottom: 70px; left: 60px; right: 60px;
+    bottom: 90px; left: 60px; right: 60px;
     background: #1A1A1A;
     border-radius: 14px;
     padding: 24px 40px;
@@ -359,24 +371,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: 1080px; height: 1080px; overflow: hidden; }
+  body { width: 1080px; height: 1350px; overflow: hidden; }
   .slide {
-    width: 1080px; height: 1080px;
+    width: 1080px; height: 1350px;
     background: #5B9B75;
     position: relative;
     font-family: 'Noto Sans KR', sans-serif;
   }
   .top-label {
     position: absolute;
-    top: 60px; left: 60px;
+    top: 80px; left: 60px;
     color: rgba(255,255,255,0.7);
     font-size: 22px; font-weight: 700;
     letter-spacing: 2px;
   }
   .photo-area {
     position: absolute;
-    top: 140px; left: 60px;
-    width: 380px; height: 500px;
+    top: 300px; left: 60px;
+    width: 380px; height: 700px;
     background: #F2B5A0;
     border-radius: 20px;
     display: flex; align-items: center; justify-content: center;
@@ -386,10 +398,10 @@
   }
   .info-panel {
     position: absolute;
-    top: 140px; left: 490px; right: 60px;
+    top: 300px; left: 490px; right: 60px;
   }
   .info-section {
-    margin-bottom: 48px;
+    margin-bottom: 64px;
   }
   .section-label {
     color: #F2B5A0;
@@ -405,7 +417,7 @@
   .highlight { color: #F2B5A0; }
   .bottom-name {
     position: absolute;
-    bottom: 60px; left: 60px;
+    bottom: 80px; left: 60px;
     color: #FFFFFF;
     font-size: 42px; font-weight: 900;
   }
@@ -526,7 +538,7 @@ for i,(a,b) in enumerate(blocks,1):
 **3단계 — 검증 (건너뛰지 말 것)**
 
 - 검출된 블록 수가 실제 슬라이드 수와 같은지 확인한다.
-- 각 블록이 **1080×1080**인지 확인한다. 다르면 HTML 레이아웃에 문제가 있다는 신호다.
+- 각 블록이 **1080×1350**인지 확인한다. 다르면 HTML 레이아웃에 문제가 있다는 신호다.
 - 슬라이드 수를 `grep -c "slide"` 로 세지 않는다. **CSS의 `.slide` 정의까지 세어 1개 더 나온다.**
   세야 한다면 `grep -c 'class="slide'` 를 쓴다. 실제로 이 실수로 존재하지 않는 8번째
   빈 이미지를 뽑은 적이 있다.
@@ -537,7 +549,7 @@ for i,(a,b) in enumerate(blocks,1):
 _cardnews/{주제}_{YYYY-MM-DD}/
   ├── {주제}.html        원본 (수정용)
   ├── full.png           전체 프리뷰
-  └── slide_01.png ~     인스타 업로드용 (1080×1080)
+  └── slide_01.png ~     인스타 업로드용 (1080×1350)
 ```
 
 `full.png`는 흐름 확인용이고, 인스타에 올리는 건 `slide_*.png`다.
