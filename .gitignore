@@ -2,3 +2,5 @@
 .claude/settings.local.json
 *.pptx
 _output/
+
+_render_test/

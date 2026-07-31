@@ -67,6 +67,22 @@
 - 후기를 받았거나 F주제(사회적 증거) 소재가 필요할 때 → `student-story`
 - 콘텐츠를 본 사람을 등록으로 이동시키는 글이 필요할 때 → `sales-copywriter`
 - 성과 점검, "뭐가 먹혔는지" 확인, 주간 리뷰가 필요할 때 → `performance-analyst`
+
+**주간 자동 리포트 (launchd)**
+
+매주 월요일 09:07에 이 맥에서 자동 실행되어 `_analytics/{날짜}_channel_report.md`를 생성한다.
+
+| 항목 | 값 |
+|------|-----|
+| 예약 정의 | `_analytics/com.bulkfarmer.weekly-report.plist` |
+| 실행 프롬프트 | `_analytics/weekly_report_prompt.txt` |
+| 실행 로그 | `_analytics/cron.log` / `cron.err.log` |
+| 상태 확인 | `launchctl list \| grep bulkfarmer` |
+| 즉시 실행 | `launchctl start com.bulkfarmer.weekly-report` |
+| 중지 | `launchctl unload ~/Library/LaunchAgents/com.bulkfarmer.weekly-report.plist` |
+
+맥이 꺼져 있으면 건너뛰고 다음 주에 실행된다. 인스타·스레드는 자동 수집이 안 되므로
+`_analytics/manual_input.md`를 채워두면 리포트에 함께 반영된다.
 - 두 작업이 함께 필요할 때는 **동시에 호출한다** (후기 자산화 → 상세페이지 후기 섹션 순으로 이어짐)
 
 ### 브랜드 전략가 세부 역할
@@ -148,20 +164,35 @@ sales-copywriter → 후기 인용 상세페이지 · 모집 공고 · DM 응대
 3. 슬라이드 구성  커버 포함 5~8장 순서 확정 + 각 슬라이드 1메시지 확인
 4. 카피 초안    헤드라인·본문·CTA 카피 먼저 확인 요청 (HTML 출력 전)
 5. HTML 출력   card_news_agent.md 스펙에 따라 슬라이드별 HTML 코드 출력
-6. 피그마 안내  "HTML to Figma" 플러그인 임포트 방법 안내
+6. PNG 렌더링  크롬 헤드리스 → 슬라이드별 1080×1080 PNG + 매수 검증
 ```
 
 **HTML 출력 원칙**
 - 캔버스 크기: 1080 × 1080px (인스타그램 정방형 기준)
 - 폰트: Google Fonts CDN `Noto Sans KR` (700·900 weight)
-- 레이아웃: `position: absolute` — 피그마 레이어 임포트 정합성 확보
-- 기본 출력 형식: 통합 프리뷰 HTML (전체 슬라이드 세로 나열)
+- 레이아웃: `position: absolute`
+- 기본 출력 형식: 통합 프리뷰 HTML (전체 슬라이드 세로 나열, 배경 `#888`, gap 40px)
 - 슬라이드별 개별 코드 블록은 요청 시 추가 제공
 
-**피그마 임포트 방법 (매 산출물 하단에 안내)**
-1. 피그마 플러그인 검색: **HTML to Figma**
-2. 플러그인 실행 → HTML 코드 붙여넣기 → Import
-3. 임포트된 프레임 선택 → Ungroup → 레이어 편집
+**PNG 렌더링 (2026-07-31부터 기본 경로 — 피그마 대체)**
+
+`HTML to Figma` 플러그인은 HTML을 피그마 레이어로 재해석하면서 위치·폰트·줄바꿈이 틀어져
+매번 수작업 보정이 필요했다. 크롬 헤드리스는 브라우저가 그린 그대로 찍으므로 변환 손실이 없다.
+
+```bash
+CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+"$CHROME" --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+  --window-size=1160,20000 --virtual-time-budget=8000 \
+  --screenshot="_cardnews/{주제}_{날짜}/full.png" "file://$PWD/{파일}.html"
+```
+
+그 다음 배경색(`#888`) 구간을 찾아 슬라이드를 **자동 분할**한다. 상세 코드는
+`_context/card_news_agent.md`의 "PNG 렌더링" 섹션 참조.
+
+- `--virtual-time-budget=8000` 필수 — 없으면 웹폰트 로딩 전에 캡처된다
+- 슬라이드 수를 `grep -c "slide"`로 세지 않는다 (CSS `.slide` 정의까지 세어 +1)
+- 분할 후 **블록 수와 1080×1080 크기를 반드시 검증**한다
+- 피그마는 사진·그래픽을 얹을 때만 사용
 
 ---
 

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>카드뉴스 — EAL SPH Pro 리에듀케이션 후기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #888;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    align-items: center;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .slide {
+    width: 1080px; height: 1080px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .bg-green { background: #5B9B75; }
+  .bg-pink  { background: #F2B5A0; }
+
+  .label {
+    position: absolute;
+    top: 60px; left: 60px;
+    font-size: 22px; font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .bg-green .label { color: rgba(255,255,255,0.7); }
+  .bg-pink  .label { color: rgba(26,26,26,0.55); }
+
+  /* ---------- Slide 1 : 훅 (그린) ---------- */
+  .s1-headline {
+    position: absolute;
+    top: 220px; left: 60px; right: 60px;
+    color: #FFFFFF;
+    font-size: 76px; font-weight: 900;
+    line-height: 1.35;
+  }
+  .s1-headline em { color: #F2B5A0; font-style: normal; }
+  .s1-sub {
+    position: absolute;
+    top: 720px; left: 60px; right: 60px;
+    color: rgba(255,255,255,0.9);
+    font-size: 38px; font-weight: 700;
+    line-height: 1.6;
+  }
+  .s1-cta {
+    position: absolute;
+    bottom: 60px; left: 60px; right: 60px;
+    background: #F2B5A0;
+    border-radius: 14px;
+    padding: 22px 40px;
+    color: #1A1A1A;
+    font-size: 30px; font-weight: 700;
+    text-align: center;
+  }
+
+  /* ---------- Slide 2 : 공감/이유 (핑크) ---------- */
+  .s2-headline {
+    position: absolute;
+    top: 180px; left: 60px; right: 60px;
+    color: #1A1A1A;
+    font-size: 72px; font-weight: 900;
+    line-height: 1.35;
+  }
+  .s2-headline em { color: #E03030; font-style: normal; }
+  .s2-body {
+    position: absolute;
+    top: 620px; left: 60px; right: 60px;
+    color: #1A1A1A;
+    font-size: 40px; font-weight: 700;
+    line-height: 1.7;
+  }
+
+  /* ---------- Slide 3 : 현장 인증 (그린 + 사진) ---------- */
+  .s3-title {
+    position: absolute;
+    top: 130px; left: 60px; right: 60px;
+    color: #FFFFFF;
+    font-size: 64px; font-weight: 900;
+    line-height: 1.35;
+  }
+  .s3-title em { color: #F2B5A0; font-style: normal; }
+  .s3-photo {
+    position: absolute;
+    top: 400px; left: 60px; right: 60px;
+    height: 480px;
+    background: #F2B5A0;
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(26,26,26,0.45);
+    font-size: 28px; font-weight: 700;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .s3-caption {
+    position: absolute;
+    bottom: 70px; left: 60px; right: 60px;
+    color: rgba(255,255,255,0.9);
+    font-size: 32px; font-weight: 700;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* ---------- Slide 4 : 배운 것 ① (핑크) ---------- */
+  .s4-headline {
+    position: absolute;
+    top: 220px; left: 60px; right: 60px;
+    color: #1A1A1A;
+    font-size: 76px; font-weight: 900;
+    line-height: 1.4;
+    text-align: center;
+  }
+  .s4-headline em { color: #E03030; font-style: normal; }
+  .s4-body {
+    position: absolute;
+    top: 660px; left: 60px; right: 60px;
+    color: #1A1A1A;
+    font-size: 40px; font-weight: 700;
+    line-height: 1.7;
+    text-align: center;
+  }
+
+  /* ---------- Slide 5 : 배운 것 ② (그린) ---------- */
+  .s5-headline {
+    position: absolute;
+    top: 180px; left: 60px; right: 60px;
+    color: #FFFFFF;
+    font-size: 70px; font-weight: 900;
+    line-height: 1.4;
+  }
+  .s5-headline em { color: #F2B5A0; font-style: normal; }
+  .s5-body {
+    position: absolute;
+    top: 620px; left: 60px; right: 60px;
+    color: rgba(255,255,255,0.92);
+    font-size: 40px; font-weight: 700;
+    line-height: 1.7;
+  }
+
+  /* ---------- Slide 6 : 약속 (핑크) ---------- */
+  .s6-headline {
+    position: absolute;
+    top: 200px; left: 60px; right: 60px;
+    color: #1A1A1A;
+    font-size: 84px; font-weight: 900;
+    line-height: 1.35;
+  }
+  .s6-headline em { color: #E03030; font-style: normal; }
+  .s6-body {
+    position: absolute;
+    top: 680px; left: 60px; right: 60px;
+    color: #1A1A1A;
+    font-size: 40px; font-weight: 700;
+    line-height: 1.7;
+  }
+
+  /* ---------- Slide 7 : CTA (그린) ---------- */
+  .s7-headline {
+    position: absolute;
+    top: 260px; left: 60px; right: 60px;
+    color: #FFFFFF;
+    font-size: 84px; font-weight: 900;
+    line-height: 1.35;
+    text-align: center;
+  }
+  .s7-headline em { color: #F2B5A0; font-style: normal; }
+  .s7-cta {
+    position: absolute;
+    top: 680px; left: 140px; right: 140px;
+    background: #F2B5A0;
+    border-radius: 14px;
+    padding: 30px 40px;
+    color: #1A1A1A;
+    font-size: 34px; font-weight: 700;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .s7-handle {
+    position: absolute;
+    bottom: 70px; left: 0; right: 0;
+    color: rgba(255,255,255,0.8);
+    font-size: 30px; font-weight: 700;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Slide 1 : 훅 ===== -->
+<div class="slide bg-green slide-01">
+  <div class="label">@bulk_farmer · 01</div>
+  <div class="s1-headline">
+    좋은 농부는<br>
+    작물보다<br>
+    <em>토양을 먼저 공부합니다</em>
+  </div>
+  <div class="s1-sub">
+    12주 동안,<br>
+    사람의 몸이라는 땅을 배우고 왔습니다.
+  </div>
+  <div class="s1-cta">벌크농부의 성장 기록, 다음 슬라이드에서 →</div>
+</div>
+
+<!-- ===== Slide 2 : 공감/이유 ===== -->
+<div class="slide bg-pink slide-02">
+  <div class="label">@bulk_farmer · 02</div>
+  <div class="s2-headline">
+    제 몸 하나 바꾼<br>
+    경험만으로는<br>
+    <em>부족했습니다</em>
+  </div>
+  <div class="s2-body">
+    55kg에서 88kg까지,<br>
+    제 몸은 제가 제일 잘 압니다.<br>
+    하지만 회원님의 몸은 저와 다릅니다.<br>
+    그래서 다시 배우기로 했습니다.
+  </div>
+</div>
+
+<!-- ===== Slide 3 : 현장 인증 ===== -->
+<div class="slide bg-green slide-03">
+  <div class="label">12 WEEKS · EAL SPH PRO</div>
+  <div class="s3-title">
+    EAL SPH Pro 리에듀케이션<br>
+    <em>12주 과정 수료</em>
+  </div>
+  <div class="s3-photo">
+    현장 사진 삽입<br>(교육장 · 실습 · 수료)
+  </div>
+  <div class="s3-caption">
+    사람의 몸을 관찰하고, 조절하고, 이해하는 과정
+  </div>
+</div>
+
+<!-- ===== Slide 4 : 배운 것 ① ===== -->
+<div class="slide bg-pink slide-04">
+  <div class="label">@bulk_farmer · 04</div>
+  <div class="s4-headline">
+    "더 많이 <em>관찰</em>해야<br>
+    더 많이 보입니다"
+  </div>
+  <div class="s4-body">
+    바꿀 수 있는 것과 바꿀 수 없는 것.<br>
+    이걸 구분하는 눈이<br>
+    코칭의 시작이라는 걸 배웠습니다.
+  </div>
+</div>
+
+<!-- ===== Slide 5 : 배운 것 ② ===== -->
+<div class="slide bg-green slide-05">
+  <div class="label">@bulk_farmer · 05</div>
+  <div class="s5-headline">
+    견갑의 움직임,<br>
+    척추의 움직임까지<br>
+    <em>봅니다</em>
+  </div>
+  <div class="s5-body">
+    벌크업 코칭을 하다 보면<br>
+    다양한 몸을 만납니다.<br>
+    이제 무게를 늘리기 전에,<br>
+    그 몸에서 일어나는 현상부터 이해합니다.
+  </div>
+</div>
+
+<!-- ===== Slide 6 : 약속 ===== -->
+<div class="slide bg-pink slide-06">
+  <div class="label">@bulk_farmer · 06</div>
+  <div class="s6-headline">
+    결국,<br>
+    <em>좋은 농부</em>가<br>
+    좋은 작물을 키웁니다
+  </div>
+  <div class="s6-body">
+    교육에서 배운 한 문장이 있습니다.<br>
+    "좋은 사람이 좋은 사람을 만든다."<br>
+    회원님께 더 정확한 코칭을 드리기 위해,<br>
+    앞으로도 계속 배우겠습니다.
+  </div>
+</div>
+
+<!-- ===== Slide 7 : CTA ===== -->
+<div class="slide bg-green slide-07">
+  <div class="label">@bulk_farmer · 07</div>
+  <div class="s7-headline">
+    당신의 몸도<br>
+    <em>관찰부터</em><br>
+    시작하겠습니다
+  </div>
+  <div class="s7-cta">
+    1:1 벌크업 코칭 문의<br>
+    프로필 링크를 확인해주세요
+  </div>
+  <div class="s7-handle">@bulk_farmer</div>
+</div>
+
+</body>
+</html>

@@ -3,7 +3,8 @@
 ## 역할 정의
 
 인스타그램 슬라이드형 카드뉴스의 기획·카피·HTML 코드를 일괄 산출한다.
-완성된 HTML은 피그마 "HTML to Figma" 플러그인으로 즉시 임포트 가능한 구조로 출력한다.
+완성된 HTML은 크롬 헤드리스로 슬라이드별 PNG(1080×1080)까지 자동 렌더링해 전달한다.
+피그마는 기본 경로가 아니다 — 사진·그래픽을 얹을 때만 사용한다.
 
 ---
 
@@ -15,7 +16,7 @@
 3. 슬라이드 구성  커버 포함 총 슬라이드 수·순서 확정 (5~8장 권장)
 4. 카피 작성    각 슬라이드별 헤드라인·본문 카피 초안
 5. HTML 출력   각 슬라이드를 독립적인 HTML 파일로 출력
-6. 피그마 안내  임포트 방법 안내
+6. PNG 렌더링  크롬 헤드리스 → 슬라이드별 1080×1080 PNG 출력 + 매수 검증
 ```
 
 ---
@@ -29,7 +30,7 @@
 | 크기 | 1080 × 1080 px (인스타그램 정방형) |
 | 배경 기본 | 세이지 그린 `#5B9B75` / 살구 핑크 `#F2B5A0` 교대 |
 | 폰트 | Noto Sans KR (Bold 700, Black 900) — Google Fonts CDN |
-| 레이아웃 | 절대 좌표 positioning (피그마 임포트 정합성 위해) |
+| 레이아웃 | 절대 좌표 positioning |
 
 ### 색상 변수
 
@@ -461,12 +462,12 @@
 ### 방식 A — 슬라이드별 개별 HTML 코드 블록
 
 각 슬라이드를 독립된 코드 블록으로 순서대로 출력.
-피그마에서 슬라이드 단위로 임포트 가능.
+슬라이드 단위로 개별 확인·수정이 필요할 때 사용.
 
 ### 방식 B — 프리뷰 통합 HTML (기본값)
 
 하나의 HTML 파일에 모든 슬라이드를 세로로 나열.
-브라우저에서 전체 흐름 확인 후 피그마로 임포트.
+브라우저에서 전체 흐름 확인 후 PNG 렌더링. **이 방식이 렌더링의 전제다.**
 
 ```html
 <!-- 통합 파일 구조 -->
@@ -479,15 +480,72 @@
 
 ---
 
-## 피그마 임포트 방법
+## PNG 렌더링 (기본 출력 — 2026-07-31부터)
 
-1. 피그마 데스크톱 앱 → 플러그인 검색: **"HTML to Figma"**
-   (https://www.figma.com/community/plugin/851183094013377180)
-2. 플러그인 실행 → HTML 코드 붙여넣기 → Import
-3. 임포트된 프레임 선택 → Ungroup → 각 레이어를 자유롭게 편집
+**피그마를 거치지 않는다.** 크롬 헤드리스로 HTML을 그대로 찍으면 변환 손실이 없다.
+`HTML to Figma` 플러그인은 HTML을 피그마 레이어로 재해석하는 과정에서 위치·폰트·줄바꿈이
+틀어져 매번 수작업 보정이 필요했다. 브라우저 렌더링은 그 단계가 없다.
 
-> 대안: **"Figma Plugin: HTML to Design"** (Anima) 사용 시
-> 브라우저 확장 → 피그마로 바로 전송 가능
+### 실행 (중간 스크립트 파일 만들지 않고 Bash 인라인)
+
+**1단계 — 전체 페이지 캡처**
+
+```bash
+CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+"$CHROME" --headless --disable-gpu --hide-scrollbars \
+  --force-device-scale-factor=1 --window-size=1160,20000 \
+  --virtual-time-budget=8000 \
+  --screenshot="_cardnews/{주제}_{날짜}/full.png" \
+  "file://$PWD/{파일명}.html"
+```
+
+`--virtual-time-budget=8000`은 Google Fonts CDN에서 Noto Sans KR을 받아올 시간이다.
+빼면 폰트가 적용되기 전에 캡처되어 기본 고딕으로 찍힌다.
+`--window-size` 높이는 넉넉히 준다. 남는 영역은 다음 단계에서 자동으로 잘려나간다.
+
+**2단계 — 슬라이드 경계 자동 인식 후 분할**
+
+슬라이드 수를 세어서 계산하지 않는다. **배경색(`#888`) 구간을 찾아 자동 분리한다.**
+
+```python
+from PIL import Image
+im=Image.open('full.png').convert('RGB'); W,H=im.size
+px=im.load(); bg=px[0,0]
+rows=[all(px[x,y]==bg for x in range(0,W,7)) for y in range(H)]
+blocks=[];s=None
+for y,g in enumerate(rows):
+    if not g and s is None: s=y
+    elif g and s is not None: blocks.append((s,y)); s=None
+if s is not None: blocks.append((s,H))
+blocks=[b for b in blocks if b[1]-b[0]>200]      # 여백 노이즈 제거
+for i,(a,b) in enumerate(blocks,1):
+    xs=[x for x in range(W) if px[x,(a+b)//2]!=bg]
+    im.crop((min(xs),a,max(xs)+1,b)).save(f'slide_{i:02d}.png')
+```
+
+**3단계 — 검증 (건너뛰지 말 것)**
+
+- 검출된 블록 수가 실제 슬라이드 수와 같은지 확인한다.
+- 각 블록이 **1080×1080**인지 확인한다. 다르면 HTML 레이아웃에 문제가 있다는 신호다.
+- 슬라이드 수를 `grep -c "slide"` 로 세지 않는다. **CSS의 `.slide` 정의까지 세어 1개 더 나온다.**
+  세야 한다면 `grep -c 'class="slide'` 를 쓴다. 실제로 이 실수로 존재하지 않는 8번째
+  빈 이미지를 뽑은 적이 있다.
+
+### 출력 구조
+
+```
+_cardnews/{주제}_{YYYY-MM-DD}/
+  ├── {주제}.html        원본 (수정용)
+  ├── full.png           전체 프리뷰
+  └── slide_01.png ~     인스타 업로드용 (1080×1080)
+```
+
+`full.png`는 흐름 확인용이고, 인스타에 올리는 건 `slide_*.png`다.
+
+### 피그마가 필요한 경우
+
+사진·그래픽 소재를 얹거나 손으로 디테일을 잡아야 할 때만 쓴다.
+그 경우에도 렌더링된 PNG를 먼저 확인해 **정말 손댈 게 있는지 판단한 뒤** 연다.
 
 ---
 

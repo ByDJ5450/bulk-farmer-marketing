@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.bulkfarmer.weekly-report</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>export PATH="$HOME/.nvm/versions/node/v24.15.0/bin:/Library/Frameworks/Python.framework/Versions/3.14/bin:/usr/local/bin:/usr/bin:/bin"; cd "$HOME/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀" &amp;&amp; claude -p "$(cat _analytics/weekly_report_prompt.txt)" --model claude-sonnet-5 --permission-mode acceptEdits --allowedTools Bash Read Write Edit Glob Grep</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key><integer>1</integer>
+    <key>Hour</key><integer>9</integer>
+    <key>Minute</key><integer>7</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_analytics/cron.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_analytics/cron.err.log</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>
