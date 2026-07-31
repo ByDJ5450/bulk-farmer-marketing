@@ -39,7 +39,13 @@
       "Bash(git commit -m ' *)",
       "Bash(git remote *)",
       "Bash(git push *)",
-      "Bash(ssh -T git@github.com)"
+      "Bash(ssh -T git@github.com)",
+      "Bash(git fetch *)",
+      "Bash(git ls-tree *)",
+      "Bash(curl -s https://github.com/ByDJ5450/bulk-farmer-marketing)"
+    ],
+    "additionalDirectories": [
+      "/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_template"
     ]
   },
   "enabledPlugins": {

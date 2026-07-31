@@ -24,9 +24,18 @@
 │   ├── business_context.md         # 비즈니스 모델, 고객 전환 여정, 마케팅 전략
 │   ├── design_style_guide.md       # 컬러 팔레트, 타이포그래피, 레이아웃 원칙
 │   ├── youtube_strategy.md         # 유튜브 채널 성과 분석 + 제목 공식 + 기획 템
+│   ├── youtube_planner_agent.md    # 유튜브 기획자 에이전트 — StoryBrand 7단계 몰입 설계 × 트렌드 분석
 │   ├── shortform_agent.md          # 숏폼 에이전트 — 훅 3종 × 포맷 5종 × 플랫폼 체크리스트
 │   ├── brand_strategy_agent.md     # 브랜드 전략가 에이전트 — 트렌드 분석·전환 단계·브리핑 양식
-│   └── threads_agent.md            # 스레드 작가 에이전트 — 중복 방지·사실 검증·유형별 작성 가이드
+│   ├── threads_agent.md            # 스레드 작가 에이전트 — 중복 방지·사실 검증·유형별 작성 가이드
+│   └── card_news_agent.md          # 카드뉴스 디렉터 에이전트 — 4포맷 × HTML 출력 규격 × 피그마 임포트 가이드
+├── .claude/agents/                 # 실행 가능한 서브에이전트 (독립 컨텍스트)
+│   ├── sales-copywriter.md         # 전환 카피라이터 — DM·모집공고·상세페이지·상담 스크립트
+│   ├── student-story.md            # 후기 자산화 — 인터뷰 설계 × 4채널 분기
+│   └── performance-analyst.md      # 성과 분석 — 수집·패턴 판별·다음 주 기획 인풋
+├── _analytics/                     # 성과 리포트 (performance-analyst)
+├── _conversion/                    # 전환 카피 산출물 (sales-copywriter)
+├── _testimonials/                  # 수강생 후기 원자료 (student-story)
 ├── _template/                      # 제작 템플릿 
 │   ├── pptx_template.md            # PPT 8가지 레이아웃 패턴 + 42슬라이드 구성
 │   ├── threads_template.md         # 스레드 3가지 유형 × 6가지 주제 조합 가이드
@@ -44,9 +53,21 @@
 | **브랜드 전략가** | 트렌드 분석, 전환 단계 설정, 주제 선정, 에이전트 브리핑 | brand_strategy_agent, brand_guidelines, business_context |
 | **스레드 작가** | 스레드 텍스트 게시물 (유형 1~3 × 주제 A~F), 발행 이력 관리 | threads_agent, threads_template, brand_guidelines |
 | **숏폼 PD** | 유튜브 쇼츠·인스타그램 릴스·틱톡 스크립트 및 구성안 | _context/shortform_agent, youtube_strategy, brand_guidelines |
-| **카드뉴스 디렉터** | 인스타그램 슬라이드 콘텐츠 기획 및 카피 | design_style_guide, card_news 템플릿 |
-| **유튜브 기획자** | 롱폼 기획서, 제목 공식 적용, 섬네일 방향 | youtube_strategy |
+| **카드뉴스 디렉터** | 인스타그램 슬라이드 콘텐츠 기획·카피·HTML 출력 (피그마 임포트용) | card_news_agent, design_style_guide |
+| **유튜브 기획자** | StoryBrand 7단계 몰입 설계, 롱폼·쇼츠 기획서, 제목·썸네일 | youtube_planner_agent, youtube_strategy, brand_guidelines |
 | **PPT 제작자** | 코칭 커리큘럼 슬라이드 (42슬라이드 구조) | pptx_template, design_style_guide |
+| **전환 카피라이터** ⚡ | DM 응대·모집 공고·상세페이지·상담 스크립트·강의 런칭 시퀀스 | `.claude/agents/sales-copywriter.md` |
+| **후기 자산화** ⚡ | 후기 인터뷰 설계, 원자료 보관, 카드뉴스·스레드·쇼츠·상세페이지 분기 | `.claude/agents/student-story.md` |
+| **성과 분석가** ⚡ | 채널 데이터 수집, 포맷·기간·패턴 분석, 다음 주 기획 인풋, 전략 문서 검증 | `.claude/agents/performance-analyst.md` |
+
+⚡ 표시는 **실행 가능한 서브에이전트**다. `.claude/agents/`에 정의되어 있고, 독립 컨텍스트에서 병렬 실행된다.
+나머지 역할은 아직 `_context/*.md` 참조 문서 형태이며, 메인 세션이 직접 읽어 수행한다.
+
+**서브에이전트 호출 기준**
+- 후기를 받았거나 F주제(사회적 증거) 소재가 필요할 때 → `student-story`
+- 콘텐츠를 본 사람을 등록으로 이동시키는 글이 필요할 때 → `sales-copywriter`
+- 성과 점검, "뭐가 먹혔는지" 확인, 주간 리뷰가 필요할 때 → `performance-analyst`
+- 두 작업이 함께 필요할 때는 **동시에 호출한다** (후기 자산화 → 상세페이지 후기 섹션 순으로 이어짐)
 
 ### 브랜드 전략가 세부 역할
 
@@ -103,6 +124,44 @@
 ```
 스레드 텍스트 → 같은 주제 쇼츠 스크립트 → 카드뉴스 슬라이드
 ```
+
+전환 릴레이 구조 (후기 → 등록):
+```
+수강생 후기 접수
+   ↓
+student-story  → 원자료 보관 + 4채널 분기 (카드뉴스·스레드·쇼츠·상세페이지)
+   ↓
+sales-copywriter → 후기 인용 상세페이지 · 모집 공고 · DM 응대 스크립트
+   ↓
+발행 → 문의 유입 → DM 4단계(공감→진단→원인→제안) → 상담 → 등록
+```
+
+---
+
+### 카드뉴스 디렉터 세부 역할
+
+카드뉴스 제작 요청이 들어오면 아래 순서로 처리한다.
+
+```
+1. 포맷 결정    공감유도형 / Before-After형 / 체크리스트형 / 프로필신뢰형 중 선택
+2. 주제·단계    A~F 주제 + 전환 단계(인지·관심·고민·신뢰·전환) 확인
+3. 슬라이드 구성  커버 포함 5~8장 순서 확정 + 각 슬라이드 1메시지 확인
+4. 카피 초안    헤드라인·본문·CTA 카피 먼저 확인 요청 (HTML 출력 전)
+5. HTML 출력   card_news_agent.md 스펙에 따라 슬라이드별 HTML 코드 출력
+6. 피그마 안내  "HTML to Figma" 플러그인 임포트 방법 안내
+```
+
+**HTML 출력 원칙**
+- 캔버스 크기: 1080 × 1080px (인스타그램 정방형 기준)
+- 폰트: Google Fonts CDN `Noto Sans KR` (700·900 weight)
+- 레이아웃: `position: absolute` — 피그마 레이어 임포트 정합성 확보
+- 기본 출력 형식: 통합 프리뷰 HTML (전체 슬라이드 세로 나열)
+- 슬라이드별 개별 코드 블록은 요청 시 추가 제공
+
+**피그마 임포트 방법 (매 산출물 하단에 안내)**
+1. 피그마 플러그인 검색: **HTML to Figma**
+2. 플러그인 실행 → HTML 코드 붙여넣기 → Import
+3. 임포트된 프레임 선택 → Ungroup → 레이어 편집
 
 ---
 
@@ -225,8 +284,12 @@
 |------|---------|------|---------|
 | 인스타그램 | 하루 5~10개 | 슬라이드형 카드 | 공감 40% / 정보 30% / 신뢰 20% / 브랜드 10% |
 | 스레드 | 하루 5~10개 | 텍스트 | 동일 비중 |
-| 유튜브 쇼츠 | 주 3~5개 | 60초 이내 | 알고리즘 유입 담당 |
-| 유튜브 롱폼 | 주 1개 | 10~16분 | 신뢰·전환 담당 |
+| 유튜브 쇼츠 | 주 3~5개 | 60초 이내 | 유입 담당 — **훅을 정체성 호명형으로 전환 중** |
+| 유튜브 롱폼 | **주 1~2개** | **10~14분** | 유입 + 신뢰·전환 — 타인/수강생 케이스 스토리 |
+| 틱톡 | 주 3~5개 | 15~60초 | 쇼츠 교차 발행 — 유튜브와 성과가 다름 |
+
+> **2026-07-31 조정.** 최근 90일 기준 롱폼 중앙값(2,051)이 쇼츠(1,648)를 앞질렀다.
+> 롱폼 비중을 올리고 쇼츠는 훅 유형을 교체한다. 근거: `_analytics/2026-07-31_channel_report.md`
 
 ---
 
@@ -253,9 +316,10 @@
 `멸치` / `마른 비만` / `N가지 특징/실수` / `이겨내야` / `프로젝트 모집` / `필수`
 
 ### 유의사항
-- 영어 롱폼 지양 (현재 평균 조회수 855, 한국어 쇼츠 대비 10배 이하)
-- 20분 이상 롱폼 지양 (완주율 하락)
+- 18분 이상 롱폼 지양 (완주율 하락) / 5분 미만 롱폼도 저조
 - 부정형 단독 제목 지양 ("이렇게 하면 안됩니다" 등 훅이 약함)
+- 정보 전달형 쇼츠 단독 지양 — 훅을 정체성 호명형으로 감쌀 것
+- ~~영어 롱폼 지양~~ → **삭제됨.** 근거였던 "평균 855"는 자동 번역 제목 중복 집계 오류였음 (2026-07-31 검증)
 
 ---
 
@@ -297,6 +361,10 @@
 4. `_context/threads_agent.md` — 스레드 게시물 제작 시 (중복 방지·사실 검증 포함)
 5. `_template/threads_template.md` — 스레드 유형별 구조 참조
 6. `_context/shortform_agent.md` — 숏폼(쇼츠·릴스·틱톡) 제작 시
-7. `_context/design_style_guide.md` — 시각 디자인 규칙
-8. `_context/youtube_strategy.md` — 유튜브 기획 및 성과 기반 의사결정
-9. `_template/pptx_template.md` — PPT 슬라이드 제작 시
+7. `_context/card_news_agent.md` — 카드뉴스 HTML 출력 및 피그마 임포트 시
+8. `_context/design_style_guide.md` — 시각 디자인 규칙
+9. `_context/youtube_strategy.md` — 유튜브 기획 및 성과 기반 의사결정
+10. `_context/youtube_planner_agent.md` — StoryBrand 7단계 몰입 설계 유튜브 기획 시
+11. `_template/pptx_template.md` — PPT 슬라이드 제작 시
+12. `.claude/agents/sales-copywriter.md` — 전환 카피 작성 시 (서브에이전트가 자동 로드)
+13. `.claude/agents/student-story.md` — 후기 자산화 시 (서브에이전트가 자동 로드)
