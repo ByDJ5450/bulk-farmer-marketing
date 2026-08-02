@@ -25,9 +25,9 @@ tools: Bash, Read, Write, Edit, Glob, Grep, WebSearch
 | 채널 | 자동화 | 수단 | 신뢰도 |
 |------|--------|------|--------|
 | 유튜브 | ✅ 완전 | yt-dlp | 전수 수집 검증됨 (57개) |
-| 틱톡 | ⚠️ 부분 | yt-dlp | **약 35%만 추출 성공** — 표본으로만 사용 |
-| 인스타그램 | ❌ | 로그인 필요 | 수동 입력 |
-| 스레드 | ❌ | 미지원 | 수동 입력 |
+| 틱톡 | ⚠️ 부분 | yt-dlp | 재시도 포함 약 48% — 표본으로만 사용 |
+| **스레드** | ✅ 완전 | **Threads API** | 2026-08-02 연동 완료 |
+| 인스타그램 | ❌ | 로그인 필요 | 수동 입력 (Meta API 연동 예정) |
 
 **중간 스크립트 파일(.py, .sh)을 만들지 않고 Bash 인라인으로 실행한다.**
 
@@ -72,7 +72,38 @@ yt-dlp --skip-download --no-warnings --socket-timeout 20 --ignore-errors \
 
 **분석 시 반드시 이 대조를 포함한다.** 한쪽에서만 터진 콘텐츠는 다른 쪽 재발행 후보다.
 
-### 인스타그램 · 스레드 (수동)
+### 스레드 (자동 · Threads API)
+
+자격증명은 `~/.config/bulkfarmer/meta.env`에 있다. **토큰 값을 출력·로그에 절대 찍지 않는다.**
+
+```bash
+source ~/.config/bulkfarmer/meta.env
+# 게시물 목록
+curl -s "https://graph.threads.net/v1.0/me/threads?fields=id,text,timestamp,permalink,media_type&limit=50&access_token=$THREADS_TOKEN"
+# 게시물별 지표 (게시물 ID마다)
+curl -s "https://graph.threads.net/v1.0/{POST_ID}/insights?metric=views,likes,replies,reposts,quotes&access_token=$THREADS_TOKEN"
+# 계정 지표
+curl -s "https://graph.threads.net/v1.0/me/threads_insights?metric=views,followers_count&access_token=$THREADS_TOKEN"
+```
+
+- 게시물이 많으면 `insights` 호출이 건당 1회다. 최근 30일치만 조회한다.
+- `views`가 유튜브의 조회수에 해당한다. 팔로워 대비 도달률(views ÷ followers)을 함께 계산한다.
+
+**토큰 만료 점검 (매 실행 시 필수)**
+
+`THREADS_TOKEN_EXPIRES` 값과 오늘 날짜를 비교한다.
+
+- 만료 7일 이내 → 갱신 시도 후 결과를 텔레그램으로 알린다
+- 갱신 성공 시 `meta.env`의 `THREADS_TOKEN`·`THREADS_TOKEN_EXPIRES`를 갱신한다
+
+```bash
+curl -s "https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=$THREADS_TOKEN"
+```
+
+> 대시보드에서 발급한 토큰은 이미 장기(60일)다. `th_exchange_token`(단기→장기 교환)은
+> 거부되며, 갱신은 위 `th_refresh_token`을 쓴다.
+
+### 인스타그램 (수동)
 
 자동 수집 경로가 없다. `_analytics/manual_input.md` 양식을 사용자에게 제시하고 채워달라고 요청한다.
 
