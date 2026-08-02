@@ -59,6 +59,36 @@ _blog/{slug}/
 | 태그 | 8~10개 | 주 키워드 변형 위주 |
 | 발행 주기 | 주 1~2회 꾸준히 | C-Rank는 주제 일관성과 활동성을 본다 |
 
+### 모바일 가독성 (이게 체류시간을 좌우한다)
+
+블로그 독자의 대부분은 폰으로 본다. 모바일 본문 한 줄은 **한글 20자 남짓**이다.
+20자를 넘으면 문장이 아무 데서나 잘려 다음 줄로 넘어가고, 그게 쌓이면 글자 벽이 된다.
+
+| 규칙 | 기준 |
+|------|------|
+| 한 줄 | **20자 내외**, 25자 넘기지 않는다 |
+| 줄바꿈 | 의미 단위로 `<br />` — 문장이 저절로 꺾이게 두지 않는다 |
+| 한 문단 | 1~3줄. 넘으면 `<p>`를 나눈다 |
+| 문단 사이 | 반드시 빈 줄 |
+| 긴 문장 | 두 문장으로 쪼갠다. 접속사로 잇지 않는다 |
+
+검증:
+```bash
+/usr/bin/python3 - <<'EOF'
+import re, html; from pathlib import Path
+t = Path('_blog/{slug}/content.html').read_text(encoding='utf-8')
+plain = html.unescape(re.sub(r'<[^>]+>','', re.sub(r'<br\s*/?>|</p>|</h3>|</li>|</blockquote>','\n',t)))
+lines = [l.strip() for l in plain.split('\n') if l.strip() and not l.strip().startswith('■')]
+print(f"평균 {sum(map(len,lines))//len(lines)}자 | 25자 초과 {sum(1 for l in lines if len(l)>25)}개 / {len(lines)}개")
+EOF
+```
+
+### 발행 전 모바일 프리뷰
+
+붙여넣기 전에 **실제로 어떻게 보이는지 눈으로 확인한다.** 390px 폭으로 렌더링해
+스크린샷을 찍으면 네이버 모바일 화면과 거의 같다. 만드는 코드는
+`_blog/12week_case_2026-08-02/_preview.html` 를 그대로 복사해 쓴다.
+
 **체류시간이 실질적으로 가장 중요하다.** 2026년 기준 상위권은 평균 2분 30초 이상이다.
 표·목록·사진을 섞어 스크롤이 끊기지 않게 만든다. 글자 벽을 만들지 않는다.
 
