@@ -87,6 +87,46 @@ def publish(text):
 
 
 CARDNEWS = ROOT.parent / "_cardnews"
+BLOG = ROOT.parent / "_blog"
+
+
+def handle_blog(action, slug, cq, cid, mid):
+    """네이버 블로그 승인/버림. 발행은 publish_post.py 에 위임한다."""
+    import subprocess
+    rec = BLOG / "pending" / f"{slug}.json"
+    if not rec.exists():
+        tg("answerCallbackQuery", callback_query_id=cq["id"], text="글을 찾을 수 없습니다")
+        return
+    doc = json.loads(rec.read_text(encoding="utf-8"))
+    if doc.get("status") != "pending":
+        tg("answerCallbackQuery", callback_query_id=cq["id"], text=f"이미 처리됨 ({doc['status']})")
+        return
+
+    if action == "nvdel":
+        doc["status"] = "discarded"
+        tg("answerCallbackQuery", callback_query_id=cq["id"], text="버렸습니다")
+        tg("editMessageText", chat_id=cid, message_id=mid, text=f"🗑 블로그 글 버림 — {slug}")
+    else:
+        tg("answerCallbackQuery", callback_query_id=cq["id"], text="발행 중…")
+        tg("editMessageText", chat_id=cid, message_id=mid, text=f"⏳ 블로그 발행 중 — {slug}")
+        cmd = ["/usr/bin/python3", str(BLOG / "publish_post.py"), doc["post_dir"],
+               "--publish", "--open", doc.get("open_type", "closed")]
+        if doc.get("category"):
+            cmd += ["--category", str(doc["category"])]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        out = (r.stdout or "") + (r.stderr or "")
+        if r.returncode == 0:
+            doc["status"] = "published"
+            link = next((w for w in out.split() if w.startswith("https://blog.naver.com")), "")
+            tg("editMessageText", chat_id=cid, message_id=mid,
+               text=f"✅ 블로그 발행 완료 — {slug}\n{link}")
+        else:
+            doc["status"] = "failed"
+            doc["error"] = out[-500:]
+            tg("editMessageText", chat_id=cid, message_id=mid,
+               text=f"❌ 블로그 발행 실패 — {slug}\n{out[-500:]}")
+
+    rec.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def handle_cardnews(action, slug, cq, cid, mid):
@@ -176,6 +216,10 @@ def main():
 
         if parts[0] in ("igpub", "igdel") and len(parts) == 2:
             handle_cardnews(parts[0], parts[1], cq, cid, mid)
+            continue
+
+        if parts[0] in ("nvpub", "nvdel") and len(parts) == 2:
+            handle_blog(parts[0], parts[1], cq, cid, mid)
             continue
 
         if len(parts) != 3:

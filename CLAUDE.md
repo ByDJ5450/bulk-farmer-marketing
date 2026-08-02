@@ -33,7 +33,10 @@
 │   ├── sales-copywriter.md         # 전환 카피라이터 — DM·모집공고·상세페이지·상담 스크립트
 │   ├── student-story.md            # 후기 자산화 — 인터뷰 설계 × 4채널 분기
 │   └── performance-analyst.md      # 성과 분석 — 수집·패턴 판별·다음 주 기획 인풋
-├── _analytics/                     # 성과 리포트 (performance-analyst)
+├── _analytics/                     # 성과 리포트 (performance-analyst) + 주간 자동화
+├── _threads/                       # 스레드 초안·승인 워커·발행 이력
+├── _cardnews/                      # 카드뉴스 HTML·PNG·인스타 캐러셀 발행
+├── _blog/                          # 네이버 블로그 글·OAuth·발행 (naver_setup.md)
 ├── _conversion/                    # 전환 카피 산출물 (sales-copywriter)
 ├── _testimonials/                  # 수강생 후기 원자료 (student-story)
 ├── _template/                      # 제작 템플릿 
@@ -91,6 +94,9 @@
 | `threads-draft` | 매일 08:13 | `_threads/com.bulkfarmer.threads-draft.plist` | 스레드 초안 5개 → 텔레그램 승인 요청 |
 | `threads-worker` | 5분마다 | `_threads/com.bulkfarmer.threads-worker.plist` | 승인된 초안만 발행 → 이력 기록 |
 
+`threads-worker`는 이름과 달리 **승인 버튼 전체**를 처리한다 — 스레드(`pub`/`del`),
+카드뉴스(`igpub`/`igdel`), 네이버 블로그(`nvpub`/`nvdel`).
+
 ```
 상태 확인   launchctl list | grep bulkfarmer
 즉시 실행   launchctl start com.bulkfarmer.{작업명}
@@ -105,6 +111,7 @@
 | 인스타그램 | ✅ 전수 | Instagram Graph API (팔로워 2,017) |
 | 스레드 | ✅ 전수 | Threads API (팔로워 354) |
 | 틱톡 | ⚠️ 약 48% | yt-dlp, 표본용 |
+| 네이버 블로그 | ✅ 발행만 | Naver Open API — 성과 지표는 API 없음, 블로그 통계 수동 |
 | **전환 지표** | ❌ 수동 | DM 문의·유입경로·등록 — `_analytics/manual_input.md` 3번 표 |
 
 전환 지표는 DM 대화에서 나오는 값이라 API로 얻을 수 없다. **주 1분 입력이 필요하다.**
@@ -113,6 +120,9 @@
 ```
 ~/.config/bulkfarmer/telegram.env   봇 토큰, chat_id
 ~/.config/bulkfarmer/meta.env       스레드·인스타 토큰(만료 2026-10-01), 앱 시크릿
+~/.config/bulkfarmer/r2.env         Cloudflare R2 키 (카드뉴스 이미지 임시 호스팅)
+~/.config/bulkfarmer/naver.env      네이버 클라이언트 ID·시크릿 — 세팅: _blog/naver_setup.md
+~/.config/bulkfarmer/naver_token.json  액세스·리프레시 토큰 (자동 갱신)
 ```
 토큰 값을 출력·로그·커밋에 절대 남기지 않는다. 만료 7일 전 자동 갱신 + 텔레그램 알림.
 - 두 작업이 함께 필요할 때는 **동시에 호출한다** (후기 자산화 → 상세페이지 후기 섹션 순으로 이어짐)
