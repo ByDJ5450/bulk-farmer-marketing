@@ -27,7 +27,7 @@ tools: Bash, Read, Write, Edit, Glob, Grep, WebSearch
 | 유튜브 | ✅ 완전 | yt-dlp | 전수 수집 검증됨 (57개) |
 | 틱톡 | ⚠️ 부분 | yt-dlp | 재시도 포함 약 48% — 표본으로만 사용 |
 | **스레드** | ✅ 완전 | **Threads API** | 2026-08-02 연동 완료 |
-| 인스타그램 | ❌ | 로그인 필요 | 수동 입력 (Meta API 연동 예정) |
+| **인스타그램** | ✅ 완전 | **Instagram Graph API** | 2026-08-02 연동 완료 |
 
 **중간 스크립트 파일(.py, .sh)을 만들지 않고 Bash 인라인으로 실행한다.**
 
@@ -103,22 +103,48 @@ curl -s "https://graph.threads.net/refresh_access_token?grant_type=th_refresh_to
 > 대시보드에서 발급한 토큰은 이미 장기(60일)다. `th_exchange_token`(단기→장기 교환)은
 > 거부되며, 갱신은 위 `th_refresh_token`을 쓴다.
 
-### 인스타그램 (수동)
+### 인스타그램 (자동 · Instagram Graph API)
 
-자동 수집 경로가 없다. `_analytics/manual_input.md` 양식을 사용자에게 제시하고 채워달라고 요청한다.
-
+```bash
+source ~/.config/bulkfarmer/meta.env
+# 미디어 목록
+curl -s "https://graph.instagram.com/v23.0/me/media?fields=id,caption,media_type,timestamp,permalink&limit=50&access_token=$IG_TOKEN"
+# 게시물별 지표 (미디어 ID마다)
+curl -s "https://graph.instagram.com/v23.0/{MEDIA_ID}/insights?metric=reach,saved,shares,likes,comments,profile_visits&access_token=$IG_TOKEN"
+# 계정 지표 (기간 지정, UNIX 초)
+curl -s "https://graph.instagram.com/v23.0/me/insights?metric=reach,profile_views,website_clicks&period=day&metric_type=total_value&since={FROM}&until={TO}&access_token=$IG_TOKEN"
 ```
-인스타그램 인사이트 → 최근 30일 (게시물별):
-  도달 / 저장 / 공유 / 프로필 방문 / 링크 클릭
-스레드 (게시물별):
-  조회 / 좋아요 / 답글 / 리포스트
-공통:
-  팔로워 증감, 해당 기간 DM 문의 건수
+
+**우선순위:** `saved` > `shares` > `likes`. 저장이 알고리즘 확산에 가장 강하게 작용한다.
+
+**`website_clicks`와 `profile_visits`가 전환에 가장 가깝다.** 조회수보다 이 두 지표를
+DM 문의 수와 대조하는 것이 목표(등록)에 직결된다.
+
+- `media_type`: IMAGE / VIDEO / CAROUSEL_ALBUM — 카드뉴스는 CAROUSEL_ALBUM이다.
+  포맷별 성과를 반드시 나눠서 본다.
+- 지표 이름은 API 버전마다 바뀐다. 오류가 나면 **추측하지 말고 오류 메시지에 나온
+  사용 가능 지표 목록을 그대로 쓴다.**
+
+**토큰 만료 점검 (매 실행 시 필수)** — `IG_TOKEN_EXPIRES` 확인, 7일 이내면 갱신:
+
+```bash
+curl -s "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=$IG_TOKEN"
 ```
 
-**받지 못하면 그 채널은 "데이터 없음"으로 명시하고 넘어간다. 추정치를 지어내지 않는다.**
+> 스레드와 동일하게 대시보드 발급 토큰은 이미 장기(60일)다.
+> `ig_exchange_token`은 거부되며 `ig_refresh_token`을 쓴다.
 
-> 자동화하려면 Meta Graph API(인스타그램·스레드, 비즈니스 계정 + 개발자 앱 필요)가 유일한 정식 경로다.
+### 수동 입력이 여전히 필요한 것
+
+**전환 지표만 남았다.** DM 대화에서 나오는 값이라 API로 얻을 수 없다.
+
+`_analytics/manual_input.md`의 3번 표(DM 문의 / 유입 경로 / 상담 / 등록)를 읽는다.
+비어 있으면 **"데이터 없음"으로 명시**하고 넘어간다. 추정치를 지어내지 않는다.
+
+이 표가 비어 있으면 리포트는 여전히 "조회수 최적화"에 머문다. 목표는 등록이다.
+2주 이상 비어 있으면 리포트에 그 사실을 적고, DM 2단계 유입 경로 질문
+(`sales-copywriter`)이 실제로 쓰이고 있는지 사용자에게 확인한다.
+
 > 브라우저 쿠키를 이용한 스크래핑은 계정 제재 위험이 있어 **사용하지 않는다.**
 
 ---

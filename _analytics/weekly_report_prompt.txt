@@ -20,8 +20,15 @@
 4. 틱톡 수집 (--ignore-errors 필수). 성공/실패 개수를 리포트에 명시한다.
    실패율 60% 초과 시 `yt-dlp -U` 후 1회 재시도하고, 그래도 안 되면 "틱톡 수집 실패"로 기록한다.
 
-5. `_analytics/manual_input.md`를 읽는다. 인스타그램·전환 지표가 비어 있으면
-   추정하지 말고 "데이터 없음"으로 명시한다. (스레드는 4-1에서 자동 수집됨)
+4-2. 인스타그램 수집 (Instagram Graph API). 자격증명은 같은 meta.env.
+     미디어 목록 + 게시물별 지표(reach/saved/shares/likes/comments/profile_visits)
+     + 계정 지표(reach/profile_views/website_clicks).
+     media_type(IMAGE/VIDEO/CAROUSEL_ALBUM)별로 나눠서 본다 — 카드뉴스는 CAROUSEL_ALBUM.
+     **website_clicks·profile_visits가 전환에 가장 가까운 지표다.** 반드시 리포트에 넣는다.
+     IG_TOKEN_EXPIRES 7일 이내면 갱신한다.
+
+5. `_analytics/manual_input.md`의 전환 지표(3번 표)를 읽는다. 비어 있으면
+   추정하지 말고 "데이터 없음"으로 명시한다. (1·2번 표는 이제 자동 수집됨)
 
 6. 리포트를 `_analytics/{YYYY-MM-DD}_channel_report.md`로 저장한다.
    형식은 performance-analyst.md의 "리포트 형식" 섹션을 따른다.
