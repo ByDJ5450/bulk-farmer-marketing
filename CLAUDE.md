@@ -36,7 +36,7 @@
 ├── _analytics/                     # 성과 리포트 (performance-analyst) + 주간 자동화
 ├── _threads/                       # 스레드 초안·승인 워커·발행 이력
 ├── _cardnews/                      # 카드뉴스 HTML·PNG·인스타 캐러셀 발행
-├── _blog/                          # 네이버 블로그 글·OAuth·발행 (naver_setup.md)
+├── _blog/                          # 네이버 블로그 글 — 자동 발행 불가, 붙여넣기 (README.md)
 ├── _conversion/                    # 전환 카피 산출물 (sales-copywriter)
 ├── _testimonials/                  # 수강생 후기 원자료 (student-story)
 ├── _template/                      # 제작 템플릿 
@@ -91,11 +91,12 @@
 | 작업 | 주기 | 정의 파일 | 하는 일 |
 |------|------|----------|---------|
 | `weekly-report` | 월 09:07 | `_analytics/com.bulkfarmer.weekly-report.plist` | 4채널 수집 → 리포트 → 텔레그램 요약 |
-| `threads-draft` | 매일 08:13 | `_threads/com.bulkfarmer.threads-draft.plist` | 스레드 초안 5개 → 텔레그램 승인 요청 |
+| `threads-draft` | 매일 08:13 | `_threads/com.bulkfarmer.threads-draft.plist` | 스레드 초안 8개 → 텔레그램 승인 요청 (3~5개 승인) |
 | `threads-worker` | 5분마다 | `_threads/com.bulkfarmer.threads-worker.plist` | 승인된 초안만 발행 → 이력 기록 |
 
-`threads-worker`는 이름과 달리 **승인 버튼 전체**를 처리한다 — 스레드(`pub`/`del`),
-카드뉴스(`igpub`/`igdel`), 네이버 블로그(`nvpub`/`nvdel`).
+`threads-worker`는 이름과 달리 **승인 버튼 전체**를 처리한다 — 스레드(`pub`/`del`)와
+카드뉴스(`igpub`/`igdel`). 스레드 승인은 즉시 발행이 아니라 **예약**이고,
+워커가 08~23시 사이 100분 간격으로 한 건씩 내보낸다 (뭉쳐 나가는 것 방지).
 
 ```
 상태 확인   launchctl list | grep bulkfarmer
@@ -111,7 +112,7 @@
 | 인스타그램 | ✅ 전수 | Instagram Graph API (팔로워 2,017) |
 | 스레드 | ✅ 전수 | Threads API (팔로워 354) |
 | 틱톡 | ⚠️ 약 48% | yt-dlp, 표본용 |
-| 네이버 블로그 | ✅ 발행만 | Naver Open API — 성과 지표는 API 없음, 블로그 통계 수동 |
+| 네이버 블로그 | ❌ 수동 | **글쓰기 API 2020-05-06 종료.** 붙여넣기 발행 — `_blog/README.md` |
 | **전환 지표** | ❌ 수동 | DM 문의·유입경로·등록 — `_analytics/manual_input.md` 3번 표 |
 
 전환 지표는 DM 대화에서 나오는 값이라 API로 얻을 수 없다. **주 1분 입력이 필요하다.**
@@ -121,8 +122,6 @@
 ~/.config/bulkfarmer/telegram.env   봇 토큰, chat_id
 ~/.config/bulkfarmer/meta.env       스레드·인스타 토큰(만료 2026-10-01), 앱 시크릿
 ~/.config/bulkfarmer/r2.env         Cloudflare R2 키 (카드뉴스 이미지 임시 호스팅)
-~/.config/bulkfarmer/naver.env      네이버 클라이언트 ID·시크릿 — 세팅: _blog/naver_setup.md
-~/.config/bulkfarmer/naver_token.json  액세스·리프레시 토큰 (자동 갱신)
 ```
 토큰 값을 출력·로그·커밋에 절대 남기지 않는다. 만료 7일 전 자동 갱신 + 텔레그램 알림.
 - 두 작업이 함께 필요할 때는 **동시에 호출한다** (후기 자산화 → 상세페이지 후기 섹션 순으로 이어짐)
@@ -364,7 +363,7 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 | 틱톡 | 3~5개 | 15~60초 | 쇼츠 교차 |
 | 인스타그램 카드뉴스 | 2개 | 1080×1350 캐러셀 | 롱폼 1 + 후기·정보 1 |
 | 스레드 | **하루 3~5개** | 텍스트 | 매일 초안 8개 중 승인 |
-| 네이버 블로그 | 1개 | 장문 HTML | 롱폼 장문화 — 검색 자산 |
+| 네이버 블로그 | 1개 | 장문 HTML | 롱폼 장문화 — 검색 자산 · **수동 붙여넣기** |
 
 내용 배분(인스타·스레드 공통): 공감 40% / 정보 30% / 신뢰 20% / 브랜드 10%
 
@@ -374,7 +373,7 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 화  롱폼 촬영·편집
 수  롱폼 발행 → 쇼츠 3~5개 컷 추출
 목  쇼츠·릴스·틱톡 발행 + 카드뉴스 1
-금  블로그 1 + 카드뉴스 1
+금  블로그 1 (붙여넣기 2분) + 카드뉴스 1
 매일 스레드 초안 8개 도착 → 3~5개 승인 (100분 간격 자동 발행)
 ```
 
