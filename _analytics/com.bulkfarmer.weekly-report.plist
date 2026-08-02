@@ -9,7 +9,42 @@
   <array>
     <string>/bin/zsh</string>
     <string>-lc</string>
-    <string>export PATH="$HOME/.nvm/versions/node/v24.15.0/bin:/Library/Frameworks/Python.framework/Versions/3.14/bin:/usr/local/bin:/usr/bin:/bin"; cd "$HOME/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀" &amp;&amp; claude -p "$(cat _analytics/weekly_report_prompt.txt)" --model claude-sonnet-5 --permission-mode acceptEdits --allowedTools Bash Read Write Edit Glob Grep</string>
+    <string>
+export PATH="$HOME/.nvm/versions/node/v24.15.0/bin:/Library/Frameworks/Python.framework/Versions/3.14/bin:/usr/local/bin:/usr/bin:/bin"
+DIR="$HOME/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀"
+CFG="$HOME/.config/bulkfarmer/telegram.env"
+
+[ -f "$CFG" ] &amp;&amp; source "$CFG"
+notify() {
+  [ -z "$TELEGRAM_BOT_TOKEN" ] &amp;&amp; return
+  curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+    --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" --data-urlencode "text=$1" >/dev/null
+}
+
+cd "$DIR" || { notify "⚠️ 주간 리포트 실패: 프로젝트 폴더에 접근할 수 없습니다."; exit 1; }
+
+PROMPT=$(cat _analytics/weekly_report_prompt.txt 2>&amp;1) || {
+  notify "⚠️ 주간 리포트 실패: 프롬프트 파일을 읽지 못했습니다.
+$PROMPT
+
+시스템 설정 → 개인정보 보호 및 보안 → 전체 디스크 접근 권한에 /bin/zsh 가 등록되어 있는지 확인하세요."
+  exit 1
+}
+
+command -v claude >/dev/null || { notify "⚠️ 주간 리포트 실패: claude CLI를 찾을 수 없습니다 (PATH 문제)."; exit 1; }
+command -v yt-dlp >/dev/null || notify "⚠️ 경고: yt-dlp를 찾을 수 없습니다. 수집이 실패할 수 있습니다."
+
+claude -p "$PROMPT" --model claude-sonnet-5 --permission-mode acceptEdits \
+  --allowedTools Bash Read Write Edit Glob Grep
+RC=$?
+
+if [ $RC -ne 0 ]; then
+  notify "⚠️ 주간 리포트 실패 (종료 코드 $RC)
+마지막 오류:
+$(tail -c 400 _analytics/cron.err.log 2>/dev/null)"
+fi
+exit $RC
+    </string>
   </array>
 
   <key>StartCalendarInterval</key>
