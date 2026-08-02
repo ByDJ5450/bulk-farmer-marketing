@@ -9,13 +9,19 @@ launchd가 5분마다 실행한다. 사용자가 직접 실행할 일은 없다.
 토큰 값은 어떤 출력·로그에도 찍지 않는다.
 """
 import json, os, sys, time, urllib.parse, urllib.request
-from datetime import date
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 PENDING = ROOT / "pending"
 STATE = ROOT / "state.json"
 LOG = ROOT / "published.md"
+
+# 승인 버튼을 연달아 누르면 글이 한 뭉텅이로 나간다. 스레드는 그걸 싫어하고,
+# 무엇보다 타임라인에서 서로를 잡아먹는다. 그래서 승인은 "예약"이고, 실제 발행은
+# 이 간격을 두고 워커가 한 건씩 내보낸다. (워커는 5분마다 돈다)
+PUBLISH_GAP = timedelta(minutes=100)
+WINDOW = (8, 23)   # 이 시간대에만 발행한다 (로컬 시각)
 
 
 def load_env(path):
@@ -167,6 +173,69 @@ def handle_cardnews(action, slug, cq, cid, mid):
     rec.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def approved_queue():
+    """승인됐지만 아직 안 나간 초안들. (파일, 문서, 초안) 오래된 순."""
+    out = []
+    for f in sorted(PENDING.glob("*.json")):
+        try:
+            doc = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for d in doc.get("drafts", []):
+            if d.get("status") == "approved":
+                out.append((f, doc, d))
+    return out
+
+
+def next_slot(st, position):
+    """position번째(0-base) 대기 건이 나갈 예상 시각."""
+    last = st.get("last_publish_at")
+    base = datetime.fromisoformat(last) + PUBLISH_GAP if last else datetime.now()
+    t = max(base, datetime.now()) + PUBLISH_GAP * position
+    if t.hour >= WINDOW[1]:
+        t = t.replace(hour=WINDOW[0], minute=0, second=0) + timedelta(days=1)
+    elif t.hour < WINDOW[0]:
+        t = t.replace(hour=WINDOW[0], minute=0, second=0)
+    return t
+
+
+def drain_queue(st):
+    """예약된 초안 중 한 건을 발행한다. 간격·시간대 조건을 만족할 때만."""
+    now = datetime.now()
+    if not (WINDOW[0] <= now.hour < WINDOW[1]):
+        return
+    last = st.get("last_publish_at")
+    if last and now - datetime.fromisoformat(last) < PUBLISH_GAP:
+        return
+
+    q = approved_queue()
+    if not q:
+        return
+    f, doc, draft = q[0]
+
+    ok, res = publish(draft["text"])
+    cid, mid = draft.get("msg_chat_id"), draft.get("msg_id")
+    if ok:
+        draft["status"] = "published"
+        draft["post_id"] = res
+        draft["published_at"] = now.isoformat(timespec="minutes")
+        record(draft, res)
+        st["last_publish_at"] = now.isoformat()
+        text = f"✅ 발행 완료 {now:%H:%M}\n\n{draft['text']}"
+    else:
+        draft["status"] = "failed"
+        draft["error"] = res
+        text = f"❌ 발행 실패\n{res}\n\n{draft['text']}"
+
+    if cid and mid:
+        tg("editMessageText", chat_id=cid, message_id=mid, text=text)
+    elif not ok:
+        notify(text)
+
+    f.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+    STATE.write_text(json.dumps(st, indent=2), encoding="utf-8")
+
+
 def find_draft(day, idx):
     f = PENDING / f"{day}.json"
     if not f.exists():
@@ -200,6 +269,7 @@ def main():
 
     results = upd.get("result", [])
     if not results:
+        drain_queue(st)   # 새 버튼이 없어도 예약분은 계속 내보내야 한다
         return
 
     last = st.get("last_update_id", 0)
@@ -245,27 +315,23 @@ def main():
                text=f"🗑 버림 ({idx}/{doc.get('total','?')})\n\n{draft['text']}")
 
         elif action == "pub":
-            tg("answerCallbackQuery", callback_query_id=cq["id"], text="발행 중…")
-            ok, res = publish(draft["text"])
-            if ok:
-                draft["status"] = "published"
-                draft["post_id"] = res
-                draft["published_at"] = date.today().isoformat()
-                record(draft, res)
-                tg("editMessageText", chat_id=cid, message_id=mid,
-                   text=f"✅ 발행 완료 ({idx}/{doc.get('total','?')})\n\n{draft['text']}")
-            else:
-                draft["status"] = "failed"
-                draft["error"] = res
-                tg("editMessageText", chat_id=cid, message_id=mid,
-                   text=f"❌ 발행 실패 ({idx}/{doc.get('total','?')})\n{res}\n\n{draft['text']}")
+            # 즉시 발행하지 않는다. 큐에 넣고 워커가 간격을 두고 내보낸다.
+            draft["status"] = "approved"
+            draft["msg_chat_id"], draft["msg_id"] = cid, mid
+            eta = next_slot(st, len(approved_queue()))
+            tg("answerCallbackQuery", callback_query_id=cq["id"],
+               text=f"예약 완료 — {eta:%H:%M} 발행 예정")
+            tg("editMessageText", chat_id=cid, message_id=mid,
+               text=f"🕒 발행 예약 {eta:%m/%d %H:%M} ({idx}/{doc.get('total','?')})\n\n{draft['text']}")
         else:
             tg("answerCallbackQuery", callback_query_id=cq["id"], text="알 수 없는 동작")
             continue
 
         f.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    STATE.write_text(json.dumps({"last_update_id": last}, indent=2), encoding="utf-8")
+    st["last_update_id"] = last
+    STATE.write_text(json.dumps(st, indent=2), encoding="utf-8")
+    drain_queue(st)
 
 
 if __name__ == "__main__":
