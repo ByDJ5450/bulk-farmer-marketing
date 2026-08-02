@@ -4,3 +4,8 @@
 _output/
 
 _render_test/
+
+_threads/pending/
+_threads/state.json
+_threads/*.log
+_analytics/cron*.log

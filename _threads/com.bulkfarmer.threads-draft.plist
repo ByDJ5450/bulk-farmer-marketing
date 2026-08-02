@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.bulkfarmer.threads-draft</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string><string>-lc</string>
+    <string>
+export PATH="$HOME/.nvm/versions/node/v24.15.0/bin:/usr/local/bin:/usr/bin:/bin"
+DIR="$HOME/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀"
+CFG="$HOME/.config/bulkfarmer/telegram.env"
+[ -f "$CFG" ] &amp;&amp; source "$CFG"
+notify() {
+  [ -z "$TELEGRAM_BOT_TOKEN" ] &amp;&amp; return
+  curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+    --data-urlencode "chat_id=$TELEGRAM_CHAT_ID" --data-urlencode "text=$1" >/dev/null
+}
+cd "$DIR" || { notify "⚠️ 스레드 초안 실패: 폴더 접근 불가"; exit 1; }
+PROMPT=$(cat _threads/draft_prompt.txt 2>&amp;1) || { notify "⚠️ 스레드 초안 실패: 프롬프트 읽기 불가
+$PROMPT"; exit 1; }
+command -v claude >/dev/null || { notify "⚠️ 스레드 초안 실패: claude CLI 없음"; exit 1; }
+claude -p "$PROMPT" --model claude-sonnet-5 --permission-mode acceptEdits \
+  --allowedTools Bash Read Write Edit Glob Grep
+RC=$?
+[ $RC -ne 0 ] &amp;&amp; notify "⚠️ 스레드 초안 생성 실패 (종료 코드 $RC)
+$(tail -c 400 _threads/draft.err.log 2>/dev/null)"
+exit $RC
+    </string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>13</integer></dict>
+  <key>StandardOutPath</key><string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_threads/draft.log</string>
+  <key>StandardErrorPath</key><string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_threads/draft.err.log</string>
+  <key>RunAtLoad</key><false/>
+</dict>
+</plist>

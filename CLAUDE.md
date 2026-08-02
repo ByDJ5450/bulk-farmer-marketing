@@ -81,8 +81,40 @@
 | 즉시 실행 | `launchctl start com.bulkfarmer.weekly-report` |
 | 중지 | `launchctl unload ~/Library/LaunchAgents/com.bulkfarmer.weekly-report.plist` |
 
-맥이 꺼져 있으면 건너뛰고 다음 주에 실행된다. 인스타·스레드는 자동 수집이 안 되므로
-`_analytics/manual_input.md`를 채워두면 리포트에 함께 반영된다.
+맥이 꺼져 있으면 건너뛰고 다음에 켤 때 실행된다.
+
+**자동화 작업 3종 (모두 launchd)**
+
+| 작업 | 주기 | 정의 파일 | 하는 일 |
+|------|------|----------|---------|
+| `weekly-report` | 월 09:07 | `_analytics/com.bulkfarmer.weekly-report.plist` | 4채널 수집 → 리포트 → 텔레그램 요약 |
+| `threads-draft` | 매일 08:13 | `_threads/com.bulkfarmer.threads-draft.plist` | 스레드 초안 5개 → 텔레그램 승인 요청 |
+| `threads-worker` | 5분마다 | `_threads/com.bulkfarmer.threads-worker.plist` | 승인된 초안만 발행 → 이력 기록 |
+
+```
+상태 확인   launchctl list | grep bulkfarmer
+즉시 실행   launchctl start com.bulkfarmer.{작업명}
+중지       launchctl unload ~/Library/LaunchAgents/com.bulkfarmer.{작업명}.plist
+```
+
+**데이터 수집 현황**
+
+| 채널 | 자동화 | 비고 |
+|------|--------|------|
+| 유튜브 | ✅ 전수 | yt-dlp |
+| 인스타그램 | ✅ 전수 | Instagram Graph API (팔로워 2,017) |
+| 스레드 | ✅ 전수 | Threads API (팔로워 354) |
+| 틱톡 | ⚠️ 약 48% | yt-dlp, 표본용 |
+| **전환 지표** | ❌ 수동 | DM 문의·유입경로·등록 — `_analytics/manual_input.md` 3번 표 |
+
+전환 지표는 DM 대화에서 나오는 값이라 API로 얻을 수 없다. **주 1분 입력이 필요하다.**
+
+**자격증명** — 전부 저장소 밖, 권한 600
+```
+~/.config/bulkfarmer/telegram.env   봇 토큰, chat_id
+~/.config/bulkfarmer/meta.env       스레드·인스타 토큰(만료 2026-10-01), 앱 시크릿
+```
+토큰 값을 출력·로그·커밋에 절대 남기지 않는다. 만료 7일 전 자동 갱신 + 텔레그램 알림.
 - 두 작업이 함께 필요할 때는 **동시에 호출한다** (후기 자산화 → 상세페이지 후기 섹션 순으로 이어짐)
 
 ### 브랜드 전략가 세부 역할
