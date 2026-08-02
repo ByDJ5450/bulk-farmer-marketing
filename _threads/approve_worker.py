@@ -86,6 +86,47 @@ def publish(text):
     return False, "발행 실패: 컨테이너 준비 시간 초과"
 
 
+CARDNEWS = ROOT.parent / "_cardnews"
+
+
+def handle_cardnews(action, slug, cq, cid, mid):
+    """카드뉴스 승인/버림. 발행은 publish_carousel.py 에 위임한다."""
+    import subprocess
+    rec = CARDNEWS / "pending" / f"{slug}.json"
+    if not rec.exists():
+        tg("answerCallbackQuery", callback_query_id=cq["id"], text="세트를 찾을 수 없습니다")
+        return
+    doc = json.loads(rec.read_text(encoding="utf-8"))
+    if doc.get("status") != "pending":
+        tg("answerCallbackQuery", callback_query_id=cq["id"], text=f"이미 처리됨 ({doc['status']})")
+        return
+
+    if action == "igdel":
+        doc["status"] = "discarded"
+        tg("answerCallbackQuery", callback_query_id=cq["id"], text="버렸습니다")
+        tg("editMessageText", chat_id=cid, message_id=mid, text=f"🗑 카드뉴스 버림 — {slug}")
+    else:
+        tg("answerCallbackQuery", callback_query_id=cq["id"], text="발행 중… 1~2분 걸립니다")
+        tg("editMessageText", chat_id=cid, message_id=mid, text=f"⏳ 카드뉴스 발행 중 — {slug}")
+        r = subprocess.run(
+            ["/usr/bin/python3", str(CARDNEWS / "publish_carousel.py"),
+             doc["slide_dir"], "--caption", doc["caption_file"], "--publish"],
+            capture_output=True, text=True, timeout=900)
+        out = (r.stdout or "") + (r.stderr or "")
+        if r.returncode == 0:
+            doc["status"] = "published"
+            link = next((w for w in out.split() if w.startswith("https://www.instagram.com")), "")
+            tg("editMessageText", chat_id=cid, message_id=mid,
+               text=f"✅ 카드뉴스 발행 완료 — {slug}\n{link}")
+        else:
+            doc["status"] = "failed"
+            doc["error"] = out[-500:]
+            tg("editMessageText", chat_id=cid, message_id=mid,
+               text=f"❌ 카드뉴스 발행 실패 — {slug}\n{out[-500:]}")
+
+    rec.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def find_draft(day, idx):
     f = PENDING / f"{day}.json"
     if not f.exists():
@@ -132,11 +173,17 @@ def main():
         cid = cq["message"]["chat"]["id"]
         mid = cq["message"]["message_id"]
         parts = data.split(":")
+
+        if parts[0] in ("igpub", "igdel") and len(parts) == 2:
+            handle_cardnews(parts[0], parts[1], cq, cid, mid)
+            continue
+
         if len(parts) != 3:
             tg("answerCallbackQuery", callback_query_id=cq["id"], text="알 수 없는 요청")
             continue
 
         action, day, idx = parts[0], parts[1], int(parts[2])
+
         f, doc, draft = find_draft(day, idx)
         if draft is None:
             tg("answerCallbackQuery", callback_query_id=cq["id"], text="초안을 찾을 수 없습니다")

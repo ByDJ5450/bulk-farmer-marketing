@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>카드뉴스 — 12주 벌크업 케이스</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#888; padding:40px; display:flex; flex-direction:column; gap:40px;
+         align-items:center; font-family:'Noto Sans KR', sans-serif; }
+  .slide { width:1080px; height:1350px; position:relative; overflow:hidden; flex-shrink:0; }
+  .bg-green { background:#5B9B75; }
+  .bg-pink  { background:#F2B5A0; }
+
+  .label { position:absolute; top:80px; left:60px; font-size:22px; font-weight:700; letter-spacing:2px; }
+  .bg-green .label { color:rgba(255,255,255,0.7); }
+  .bg-pink  .label { color:rgba(26,26,26,0.55); }
+
+  /* 1 커버 */
+  .c-head { position:absolute; top:250px; left:60px; right:60px; color:#fff;
+            font-size:82px; font-weight:900; line-height:1.28; }
+  .c-head em { color:#F2B5A0; font-style:normal; }
+  .c-sub  { position:absolute; top:800px; left:60px; right:60px; color:rgba(255,255,255,0.92);
+            font-size:36px; font-weight:700; line-height:1.6; }
+  .c-cta  { position:absolute; bottom:80px; left:60px; right:60px; background:#F2B5A0;
+            border-radius:14px; padding:26px 40px; color:#1A1A1A; font-size:30px;
+            font-weight:700; text-align:center; }
+
+  /* 2 문제 */
+  .p-head { position:absolute; top:150px; left:60px; right:60px; color:#1A1A1A;
+            font-size:62px; font-weight:900; line-height:1.3; }
+  .p-quote{ position:absolute; top:520px; left:60px; right:60px; background:rgba(26,26,26,0.09);
+            border-radius:18px; padding:44px 40px; color:#1A1A1A; font-size:40px;
+            font-weight:700; line-height:1.55; text-align:center; }
+  .p-body { position:absolute; bottom:150px; left:60px; right:60px; color:#1A1A1A;
+            font-size:34px; font-weight:700; line-height:1.65; }
+
+  /* 3·4 수치 */
+  .n-title{ position:absolute; top:130px; left:60px; right:60px; font-size:56px;
+            font-weight:900; line-height:1.3; }
+  .bg-green .n-title { color:#fff; }
+  .bg-pink  .n-title { color:#1A1A1A; }
+  .rows   { position:absolute; top:300px; bottom:210px; left:60px; right:60px;
+            display:flex; flex-direction:column; justify-content:space-evenly; }
+  .row    { display:flex; align-items:center; }
+  .rk     { width:230px; font-size:30px; font-weight:700; flex-shrink:0; }
+  .bg-green .rk { color:rgba(255,255,255,0.72); }
+  .bg-pink  .rk { color:rgba(26,26,26,0.6); }
+  .rb     { font-size:38px; font-weight:700; }
+  .bg-green .rb { color:rgba(255,255,255,0.6); }
+  .bg-pink  .rb { color:rgba(26,26,26,0.45); }
+  .ra     { font-size:46px; font-weight:900; margin-left:auto; }
+  .bg-green .ra { color:#F2B5A0; }
+  .bg-pink  .ra { color:#E03030; }
+  .arw    { font-size:32px; margin:0 18px; }
+  .bg-green .arw { color:rgba(255,255,255,0.5); }
+  .bg-pink  .arw { color:rgba(26,26,26,0.4); }
+  .foot   { position:absolute; bottom:80px; left:60px; right:60px; font-size:26px;
+            font-weight:700; text-align:center; }
+  .bg-green .foot { color:rgba(255,255,255,0.65); }
+  .bg-pink  .foot { color:rgba(26,26,26,0.5); }
+
+  /* 5 핵심 */
+  .k-small{ position:absolute; top:230px; left:60px; right:60px; color:rgba(255,255,255,0.8);
+            font-size:36px; font-weight:700; line-height:1.6; }
+  .k-big  { position:absolute; top:480px; left:60px; right:60px; color:#fff;
+            font-size:72px; font-weight:900; line-height:1.32; }
+  .k-big em { color:#F2B5A0; font-style:normal; }
+  .k-note { position:absolute; bottom:140px; left:60px; right:60px; color:rgba(255,255,255,0.85);
+            font-size:32px; font-weight:700; line-height:1.6; }
+
+  /* 6 이유 */
+  .r-head { position:absolute; top:150px; left:60px; right:60px; color:#1A1A1A;
+            font-size:62px; font-weight:900; line-height:1.3; }
+  .r-head em { color:#E03030; font-style:normal; }
+  .r-body { position:absolute; top:480px; bottom:200px; left:60px; right:60px;
+            display:flex; flex-direction:column; justify-content:center; gap:36px; }
+  .r-item { color:#1A1A1A; font-size:38px; font-weight:700; line-height:1.5; }
+
+  /* 사진 슬라이드 */
+  .ph-title { position:absolute; top:130px; left:60px; right:60px; font-size:56px;
+              font-weight:900; line-height:1.3; }
+  .bg-green .ph-title { color:#fff; }
+  .bg-pink  .ph-title { color:#1A1A1A; }
+  .ph-frame { position:absolute; top:330px; left:60px; right:60px; height:660px;
+              border-radius:20px; overflow:hidden; background:#fff;
+              display:flex; align-items:center; justify-content:center; }
+  .ph-frame img { width:100%; height:100%; object-fit:cover; display:block; }
+  .ph-frame.fit img { object-fit:contain; }
+  .ph-note  { position:absolute; bottom:150px; left:60px; right:60px; font-size:32px;
+              font-weight:700; line-height:1.6; }
+  .bg-green .ph-note { color:rgba(255,255,255,0.9); }
+  .bg-pink  .ph-note { color:#1A1A1A; }
+  .ph-foot  { position:absolute; bottom:80px; left:60px; right:60px; font-size:24px;
+              font-weight:700; text-align:center; }
+  .bg-green .ph-foot { color:rgba(255,255,255,0.6); }
+  .bg-pink  .ph-foot { color:rgba(26,26,26,0.5); }
+
+  /* 7 CTA */
+  .e-head { position:absolute; top:330px; left:60px; right:60px; color:#fff;
+            font-size:76px; font-weight:900; line-height:1.32; text-align:center; }
+  .e-head em { color:#F2B5A0; font-style:normal; }
+  .e-box  { position:absolute; top:780px; left:60px; right:60px; background:#F2B5A0;
+            border-radius:18px; padding:40px; color:#1A1A1A; font-size:34px;
+            font-weight:700; text-align:center; line-height:1.6; }
+  .e-tag  { position:absolute; bottom:90px; left:0; right:0; text-align:center;
+            color:#fff; font-size:34px; font-weight:900; }
+  .disc   { position:absolute; bottom:44px; left:0; right:0; text-align:center;
+            color:rgba(255,255,255,0.55); font-size:20px; font-weight:400; }
+</style>
+</head>
+<body>
+
+<div class="slide bg-green">
+  <div class="label">@bulk_farmer · 01</div>
+  <div class="c-head">2년 동안<br>안 변하던 몸이<br><em>12주 만에</em></div>
+  <div class="c-sub">실제 수강생의 12주 기록입니다.<br>인바디와 줄자로 전부 측정했습니다.</div>
+  <div class="c-cta">숫자로 확인하세요 →</div>
+</div>
+
+<div class="slide bg-pink">
+  <div class="label">@bulk_farmer · 02</div>
+  <div class="p-head">열심히 안 한 게<br>아니었습니다</div>
+  <div class="p-quote">“넌 원래 마른 체질이야<br>아무리 해도 안 돼”</div>
+  <div class="p-body">2년 넘게 헬스장을 다녔습니다.<br>빠진 날도 없었습니다.<br>루틴도 바꿔봤고 식단도 신경 썼습니다.<br><br>그런데 체중계 숫자는 움직이지 않았습니다.</div>
+</div>
+
+<div class="slide bg-green">
+  <div class="n-title">12주 후, 인바디</div>
+  <div class="rows">
+    <div class="row"><div class="rk">체중</div><div class="rb">69.6kg</div><div class="arw">→</div><div class="ra">76.2kg</div></div>
+    <div class="row"><div class="rk">골격근량</div><div class="rb">33.1kg</div><div class="arw">→</div><div class="ra">36.8kg</div></div>
+    <div class="row"><div class="rk">체지방률</div><div class="rb">16.6%</div><div class="arw">→</div><div class="ra">15.6%</div></div>
+  </div>
+  <div class="foot">개인에 따라 결과가 다를 수 있습니다</div>
+</div>
+
+<div class="slide bg-pink">
+  <div class="n-title">줄자는 더 정직했습니다</div>
+  <div class="rows">
+    <div class="row"><div class="rk">가슴둘레</div><div class="rb">85cm</div><div class="arw">→</div><div class="ra">95cm</div></div>
+    <div class="row"><div class="rk">어깨너비</div><div class="rb">42.5cm</div><div class="arw">→</div><div class="ra">48cm</div></div>
+    <div class="row"><div class="rk">팔둘레</div><div class="rb">30.5cm</div><div class="arw">→</div><div class="ra">35cm</div></div>
+    <div class="row"><div class="rk">허벅지둘레</div><div class="rb">50cm</div><div class="arw">→</div><div class="ra">57cm</div></div>
+  </div>
+  <div class="foot">개인에 따라 결과가 다를 수 있습니다</div>
+</div>
+
+<div class="slide bg-green">
+  <div class="ph-title">기록은 매달 남겼습니다</div>
+  <div class="ph-frame fit"><img src="img/table.jpg" alt="성장 데이터"></div>
+  <div class="ph-note">시작 전 · 1달차 · 2달차 · 3달차<br>매달 같은 항목을 같은 방식으로 측정했습니다.</div>
+  <div class="ph-foot">실제 코칭 기록 화면</div>
+</div>
+
+<div class="slide bg-pink">
+  <div class="ph-title">줄자로 직접 쟀습니다</div>
+  <div class="ph-frame"><img src="img/process.jpg" alt="측정 장면"></div>
+  <div class="ph-note">체중계 숫자만으로는 알 수 없습니다.<br>어디가 얼마나 커졌는지가 중요합니다.</div>
+  <div class="ph-foot">12주차 최종 측정</div>
+</div>
+
+<div class="slide bg-green">
+  <div class="label">@bulk_farmer · 07</div>
+  <div class="k-small">여기서 가장 중요한 건<br>체중이 6.6kg 늘었다는 게 아닙니다.</div>
+  <div class="k-big">체중은 늘었는데<br><em>체지방률은 오히려<br>내려갔습니다</em></div>
+  <div class="k-note">그냥 많이 먹어서 찌운 게 아니라는 뜻입니다.<br>늘어난 무게의 상당 부분이 근육이었습니다.</div>
+</div>
+
+<div class="slide bg-pink">
+  <div class="r-head">벌크업이 실패하는<br>가장 큰 이유는<br><em>지속성</em>입니다</div>
+  <div class="r-body">
+    <div class="r-item">12주 동안 식중독도 걸렸고<br>병원에 간 날도 있었습니다.</div>
+    <div class="r-item">그래도 다시 시작했습니다.</div>
+    <div class="r-item">방법을 몰라서 실패하는 게 아닙니다.<br>혼자 계속하기가 어려운 겁니다.</div>
+  </div>
+</div>
+
+<div class="slide bg-green">
+  <div class="label">@bulk_farmer · 09</div>
+  <div class="e-head">2년이 안 바뀌었다면<br><em>방법이 아니라<br>방향</em>일 수 있습니다</div>
+  <div class="e-box">1:1 벌크업 코칭 문의<br>프로필 링크를 확인해주세요</div>
+  <div class="e-tag">@bulk_farmer</div>
+  <div class="disc">본 사례는 개인의 결과이며 개인에 따라 결과가 다를 수 있습니다</div>
+</div>
+
+</body>
+</html>
