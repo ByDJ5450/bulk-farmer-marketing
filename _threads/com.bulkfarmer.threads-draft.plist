@@ -20,12 +20,45 @@ cd "$DIR" || { notify "⚠️ 스레드 초안 실패: 폴더 접근 불가"; ex
 PROMPT=$(cat _threads/draft_prompt.txt 2>&amp;1) || { notify "⚠️ 스레드 초안 실패: 프롬프트 읽기 불가
 $PROMPT"; exit 1; }
 command -v claude >/dev/null || { notify "⚠️ 스레드 초안 실패: claude CLI 없음"; exit 1; }
-claude -p "$PROMPT" --model claude-sonnet-5 --permission-mode acceptEdits \
-  --allowedTools Bash Read Write Edit Glob Grep
-RC=$?
-[ $RC -ne 0 ] &amp;&amp; notify "⚠️ 스레드 초안 생성 실패 (종료 코드 $RC)
-$(tail -c 400 _threads/draft.err.log 2>/dev/null)"
-exit $RC
+
+# 맥이 깨어난 직후에는 네트워크가 아직 안 올라와 있다. 2026-08-03 아침에 이 작업과
+# 주간 리포트가 같은 이유(ENOTFOUND / Connection closed)로 죽었다.
+# API에 닿을 때까지 최대 10분 기다린다. 그래도 안 되면 조용히 끝내지 않고 알린다.
+for i in $(seq 1 40); do
+  curl -s -m 5 -o /dev/null https://api.anthropic.com/ &amp;&amp; break
+  sleep 15
+done
+curl -s -m 5 -o /dev/null https://api.anthropic.com/ || {
+  notify "⚠️ 스레드 초안: 10분을 기다려도 네트워크에 연결되지 않았습니다"; exit 1; }
+
+
+TODAY=$(date +%F)
+OUT="_threads/pending/$TODAY.json"
+
+# API 연결이 응답 도중 끊기는 일이 실제로 있었다(2026-08-03).
+# 한 번 실패하면 그날 초안이 통째로 사라지므로 재시도한다.
+# 성공 판정은 종료 코드가 아니라 **결과 파일 존재 여부**로 한다 —
+# 종료 코드가 0이어도 파일이 안 만들어질 수 있다.
+TRY=0
+for TRY in 1 2 3; do
+  [ -s "$OUT" ] &amp;&amp; break
+  [ $TRY -gt 1 ] &amp;&amp; sleep 90
+  claude -p "$PROMPT" --model claude-sonnet-5 --permission-mode acceptEdits \
+    --allowedTools Bash Read Write Edit Glob Grep
+  [ -s "$OUT" ] &amp;&amp; break
+  echo "[$(date +%T)] 시도 $TRY 실패" >&amp;2
+done
+
+if [ ! -s "$OUT" ]; then
+  notify "⚠️ 스레드 초안 생성 3회 모두 실패 — 오늘 초안이 없습니다
+$(tail -c 400 _threads/draft.log 2>/dev/null)"
+  exit 1
+fi
+if [ "$TRY" -gt 1 ]; then
+  N=$(/usr/bin/python3 -c "import json;print(len(json.load(open('$OUT'))['drafts']))" 2>/dev/null || echo "?")
+  notify "ℹ️ 스레드 초안 생성 성공 (${TRY}회차 시도) — ${N}개"
+fi
+exit 0
     </string>
   </array>
   <key>StartCalendarInterval</key>

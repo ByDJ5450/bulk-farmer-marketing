@@ -444,7 +444,7 @@
     <div class="info-section">
       <div class="section-label">ABILITY</div>
       <div class="section-content">
-        K-Classic 클래식 피지크 <span class="highlight">3위</span><br>
+        K-Classic 클래식 보디빌딩 <span class="highlight">3위</span><br>
         NSCA-CPT · NASM-CPT
       </div>
     </div>

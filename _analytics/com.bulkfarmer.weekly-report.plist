@@ -34,6 +34,15 @@ $PROMPT
 command -v claude >/dev/null || { notify "⚠️ 주간 리포트 실패: claude CLI를 찾을 수 없습니다 (PATH 문제)."; exit 1; }
 command -v yt-dlp >/dev/null || notify "⚠️ 경고: yt-dlp를 찾을 수 없습니다. 수집이 실패할 수 있습니다."
 
+# 맥이 깨어난 직후에는 네트워크가 아직 안 올라와 있다. 2026-08-03 아침에 이 작업과
+# 주간 리포트가 같은 이유(ENOTFOUND / Connection closed)로 죽었다.
+# API에 닿을 때까지 최대 10분 기다린다. 그래도 안 되면 조용히 끝내지 않고 알린다.
+for i in $(seq 1 40); do
+  curl -s -m 5 -o /dev/null https://api.anthropic.com/ &amp;&amp; break
+  sleep 15
+done
+curl -s -m 5 -o /dev/null https://api.anthropic.com/ || {
+  notify "⚠️ 주간 리포트: 10분을 기다려도 네트워크에 연결되지 않았습니다"; exit 1; }
 claude -p "$PROMPT" --model claude-sonnet-5 --permission-mode acceptEdits \
   --allowedTools Bash Read Write Edit Glob Grep
 RC=$?
