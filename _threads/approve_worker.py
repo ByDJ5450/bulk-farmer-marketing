@@ -92,6 +92,48 @@ def publish(text):
     return False, "발행 실패: 컨테이너 준비 시간 초과"
 
 
+def permalink(post_id):
+    """발행된 스레드 글의 공개 주소. 실패해도 발행 자체는 성공이므로 빈 문자열."""
+    tok = META.get("THREADS_TOKEN")
+    if not tok:
+        return ""
+    r = api(f"https://graph.threads.net/v1.0/{post_id}?fields=permalink&access_token={tok}")
+    return r.get("permalink", "")
+
+
+def queue_status():
+    """지금 예약 상태를 사람이 읽을 수 있는 한 덩어리로."""
+    st = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {}
+    q = approved_queue()
+    today = date.today().isoformat()
+
+    done = []
+    for f in sorted(PENDING.glob("*.json")):
+        for d in json.loads(f.read_text(encoding="utf-8")).get("drafts", []):
+            if d.get("status") == "published" and str(d.get("published_at", "")).startswith(today):
+                done.append(d)
+
+    lines = [f"📋 스레드 현황  {date.today():%m/%d}"]
+    lines.append(f"오늘 발행 {len(done)}개 · 예약 대기 {len(q)}개")
+
+    if done:
+        lines.append("\n[발행 완료]")
+        for d in done:
+            t = str(d.get("published_at", ""))[11:16]
+            lines.append(f"  ✅ {t}  {d.get('summary', '')[:34]}")
+    if q:
+        lines.append("\n[예약]")
+        for i, (_, _, d) in enumerate(q):
+            lines.append(f"  🕒 {next_slot(st, i):%m/%d %H:%M}  {d.get('summary', '')[:34]}")
+
+    pend = sum(1 for f in PENDING.glob("*.json")
+               for d in json.loads(f.read_text(encoding="utf-8")).get("drafts", [])
+               if d.get("status") == "pending")
+    if pend:
+        lines.append(f"\n미승인 초안 {pend}개가 남아 있습니다.")
+    return "\n".join(lines)
+
+
 CARDNEWS = ROOT.parent / "_cardnews"
 
 # 네이버 블로그는 승인 버튼이 없다. 글쓰기 API가 2020-05-06 종료돼 자동 발행이
@@ -192,11 +234,51 @@ def drain_queue(st):
 
     if cid and mid:
         tg("editMessageText", chat_id=cid, message_id=mid, text=text)
-    elif not ok:
-        notify(text)
 
     f.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
     STATE.write_text(json.dumps(st, indent=2), encoding="utf-8")
+
+    # 원본 메시지를 고치는 것만으로는 알 수가 없다. 그 메시지는 채팅 위로 올라가 있다.
+    # 발행될 때마다 **새 알림**을 보낸다. 다음 예약 시각까지 같이 알려서
+    # 폰만 보고도 오늘 일정이 파악되게 한다.
+    if ok:
+        rest = approved_queue()
+        line = [f"✅ 스레드 발행 완료  {now:%H:%M}", "", draft.get("summary", "")[:60]]
+        link = permalink(res)
+        if link:
+            line.append(link)
+        if rest:
+            line += ["", f"다음 예약  {next_slot(st, 0):%m/%d %H:%M}  (대기 {len(rest)}개)"]
+        else:
+            line += ["", "예약 대기 없음"]
+        notify("\n".join(line))
+    else:
+        notify(f"❌ 스레드 발행 실패\n{res}\n\n{draft.get('summary','')[:60]}")
+
+
+def daily_wrapup(st):
+    """발행 창이 닫히는 23시 이후 하루 한 번, 그날 결과를 정리해 보낸다."""
+    now = datetime.now()
+    today = date.today().isoformat()
+    if now.hour < WINDOW[1] or st.get("wrapup_date") == today:
+        return
+    st["wrapup_date"] = today
+    STATE.write_text(json.dumps(st, indent=2), encoding="utf-8")
+
+    published = missed = 0
+    for f in PENDING.glob("*.json"):
+        for d in json.loads(f.read_text(encoding="utf-8")).get("drafts", []):
+            if d.get("status") == "published" and str(d.get("published_at", "")).startswith(today):
+                published += 1
+            elif d.get("status") == "approved":
+                missed += 1
+
+    line = [f"🌙 오늘 스레드 {published}개 발행 완료"]
+    if missed:
+        line.append(f"승인해두신 {missed}개는 시간이 모자라 내일 아침 8시부터 나갑니다.")
+    if published < 3:
+        line.append("목표는 하루 3~5개입니다. 내일은 초안을 조금 더 승인해주세요.")
+    notify("\n".join(line))
 
 
 def find_draft(day, idx):
@@ -226,18 +308,28 @@ def main():
     st = json.loads(STATE.read_text(encoding="utf-8")) if STATE.exists() else {}
     offset = st.get("last_update_id", 0) + 1
 
-    upd = tg("getUpdates", offset=offset, timeout=0, allowed_updates=json.dumps(["callback_query"]))
+    upd = tg("getUpdates", offset=offset, timeout=0,
+             allowed_updates=json.dumps(["callback_query", "message"]))
     if not upd.get("ok"):
         sys.exit(f"getUpdates 실패: {upd}")
 
     results = upd.get("result", [])
     if not results:
         drain_queue(st)   # 새 버튼이 없어도 예약분은 계속 내보내야 한다
+        daily_wrapup(st)
         return
 
     last = st.get("last_update_id", 0)
     for u in results:
         last = max(last, u["update_id"])
+
+        # "현황" 이라고 보내면 지금 예약 상태를 돌려준다.
+        # 버튼을 여러 개 눌러놓고 나중에 확인하고 싶을 때 쓴다.
+        msg = u.get("message")
+        if msg and str(msg.get("text", "")).strip() in ("현황", "상태", "/status"):
+            tg("sendMessage", chat_id=msg["chat"]["id"], text=queue_status())
+            continue
+
         cq = u.get("callback_query")
         if not cq:
             continue
@@ -291,6 +383,7 @@ def main():
     st["last_update_id"] = last
     STATE.write_text(json.dumps(st, indent=2), encoding="utf-8")
     drain_queue(st)
+    daily_wrapup(st)
 
 
 if __name__ == "__main__":
