@@ -92,10 +92,29 @@ function courseCardHTML(c, st) {
 }
 
 function updateUserChip() {
-  var chip = $('#userChip');
-  if (!chip) return;
+  var area = $('#userArea');
+  if (!area) return;
   var u = API.me();
-  chip.textContent = u ? '👤 ' + u.name + (u.role === 'coach' ? ' (코치)' : '') : '로그인';
+  if (u) {
+    area.innerHTML =
+      '<span class="user-name">👤 ' + esc(u.name) +
+      (u.role === 'coach' ? ' <b class="coach-tag">코치</b>' : '') + '</span>' +
+      '<button class="user-chip" id="logoutBtn" type="button">로그아웃</button>';
+    $('#logoutBtn').addEventListener('click', function () {
+      API.logout().then(function () {
+        toast('로그아웃 되었습니다.');
+        setTimeout(function () { location.href = 'index.html'; }, 500);
+      });
+    });
+  } else {
+    area.innerHTML =
+      '<button class="user-chip" id="loginBtn" type="button">로그인</button>' +
+      '<button class="user-chip chip-primary" id="signupBtn" type="button">회원가입</button>';
+    $('#loginBtn').addEventListener('click', gotoLogin);
+    $('#signupBtn').addEventListener('click', function () {
+      location.href = 'auth.html?mode=signup&next=' + encodeURIComponent(herePath());
+    });
+  }
 }
 
 // API.init() 이후에 호출할 것 (로그인 상태 표시 때문)
@@ -114,18 +133,8 @@ function renderHeader(active) {
   el.innerHTML = '<div class="header-inner">' +
     '<a class="logo" href="index.html">벌크농부<span>클래스</span></a>' +
     '<nav>' + nav + '</nav>' +
-    '<button class="user-chip" id="userChip" type="button"></button></div>';
+    '<div class="user-area" id="userArea"></div></div>';
   updateUserChip();
-  $('#userChip').addEventListener('click', function () {
-    var u = API.me();
-    if (!u) { gotoLogin(); return; }
-    if (confirm(u.name + '님, 로그아웃 할까요?')) {
-      API.logout().then(function () {
-        toast('로그아웃 되었습니다.');
-        setTimeout(function () { location.href = 'index.html'; }, 500);
-      });
-    }
-  });
 }
 
 function renderFooter() {
