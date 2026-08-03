@@ -1,0 +1,68 @@
+{
+  "slug": "sh_12week_2026-08-03",
+  "title": "성훈님 12주 — 171cm 69.6kg",
+  "segments": [
+    {
+      "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/fb4cce33-125c-4ac2-a26d-63a29407f9ae/scratchpad/before/clip.mp4.webm",
+      "start": 16.5,
+      "dur": 3.6,
+      "mute": true,
+      "lines": [
+        "171cm 69.6kg",
+        "2년 동안 안 변했습니다"
+      ],
+      "size": 74,
+      "y": 1160,
+      "accent": 0
+    },
+    {
+      "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/fb4cce33-125c-4ac2-a26d-63a29407f9ae/scratchpad/vid.mp4",
+      "start": 124.8,
+      "dur": 3.6,
+      "mute": true,
+      "lines": [
+        "12주 후",
+        "같은 자리에서 다시 쟀습니다"
+      ],
+      "size": 74,
+      "y": 1160,
+      "accent": 0
+    },
+    {
+      "still": "_threads/images/sh_sheet_final.jpg",
+      "dur": 6.0,
+      "lines": [
+        "체중 69.6 → 76.2kg",
+        "가슴 85 → 95cm",
+        "어깨 42.5 → 48cm"
+      ],
+      "size": 70,
+      "y": 1240,
+      "accent": 2
+    },
+    {
+      "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/fb4cce33-125c-4ac2-a26d-63a29407f9ae/scratchpad/itv/clip.mp4.webm",
+      "start": 95.5,
+      "dur": 9.5,
+      "lines": [
+        "가장 많이 변한 게",
+        "뭐냐고 물었습니다"
+      ],
+      "size": 68,
+      "y": 1230
+    },
+    {
+      "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/fb4cce33-125c-4ac2-a26d-63a29407f9ae/scratchpad/vid.mp4",
+      "start": 745.0,
+      "dur": 5.0,
+      "mute": true,
+      "lines": [
+        "2년이 안 바뀌었다면",
+        "방법이 아니라 방향일 수 있습니다"
+      ],
+      "size": 62,
+      "y": 1200,
+      "accent": 1
+    }
+  ]
+}
