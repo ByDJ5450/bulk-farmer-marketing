@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>강의 상세 — 벌크농부 클래스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="siteHeader"></header>
+
+<main id="page"></main>
+
+<footer id="siteFooter"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/adapter-local.js"></script>
+<script src="js/adapter-supabase.js"></script>
+<script src="js/api.js"></script>
+<script>
+'use strict';
+(function () {
+  var page = $('#page');
+  var course = null;
+  var enrolled = false;
+  var pct = 0;
+
+  API.init().then(function () {
+    renderHeader('courses');
+    renderFooter();
+    return API.courses();
+  }).then(function (courses) {
+    var id = qsParam('id');
+    for (var i = 0; i < courses.length; i++) {
+      if (courses[i].id === id) { course = courses[i]; break; }
+    }
+    if (!course) return null;
+    if (!API.me()) return null;
+    return API.myEnrollments().then(function (enr) {
+      enrolled = enr.indexOf(course.id) >= 0;
+      if (!enrolled) return null;
+      return API.myProgress(course.id).then(function (done) {
+        var total = lectureCount(course);
+        pct = total ? Math.round(done.length / total * 100) : 0;
+      });
+    });
+  }).then(render).catch(function (e) {
+    console.error(e);
+    page.innerHTML = '<div class="container"><div class="empty-note" style="margin-top:60px">데이터를 불러오지 못했습니다. 네트워크를 확인해주세요.</div></div>';
+  });
+
+  function render() {
+    if (!course) {
+      page.innerHTML = '<div class="container"><div class="empty-note" style="margin-top:60px">' +
+        '강의를 찾을 수 없습니다. <a href="index.html" style="color:var(--green-dark);font-weight:800">홈으로 돌아가기</a></div></div>';
+      return;
+    }
+    document.title = course.title + ' — 벌크농부 클래스';
+
+    var lectures = allLectures(course);
+    var ctaHTML = enrolled
+      ? '<a class="btn btn-green" href="classroom.html?course=' + esc(course.id) + '">이어서 학습하기 (' + pct + '% 완료)</a>'
+      : '<button class="btn btn-green" id="enrollBtn" type="button">' + (course.price > 0 ? '수강 신청하기' : '무료로 시작하기') + '</button>';
+
+    var curriculumHTML = course.sections.map(function (s, idx) {
+      var lecs = s.lectures.map(function (l) {
+        return '<div class="curr-lecture"><span>🎬 ' + esc(l.title) + '</span><span class="dur">' + esc(l.duration) + '</span></div>';
+      }).join('');
+      return '<div class="curr-section' + (idx === 0 ? ' open' : '') + '">' +
+        '<button class="curr-section-head" type="button"><span>' + esc(s.title) + '</span>' +
+        '<span class="count">' + s.lectures.length + '강</span></button>' +
+        '<div class="curr-lectures">' + lecs + '</div></div>';
+    }).join('');
+
+    page.innerHTML =
+      '<section class="course-hero"><div class="container">' +
+        '<span class="badge">' + esc(course.badge) + '</span>' +
+        '<h1>' + esc(course.title) + '</h1>' +
+        '<p class="tagline">' + esc(course.tagline) + '</p>' +
+        '<div class="meta-row"><span>📚 총 ' + lectures.length + '강</span>' +
+        '<span>📅 ' + esc(course.weeks) + '</span><span>🎯 ' + esc(course.level) + '</span>' +
+        '<span>💬 강의별 질문 답변</span></div>' +
+        '<div class="cta-row"><span class="price-tag">' + fmtPrice(course.price) + '</span>' + ctaHTML + '</div>' +
+      '</div></section>' +
+
+      '<div class="container"><div class="detail-grid">' +
+        '<div class="detail-main">' +
+          '<section><h2>이 강의로 얻는 것</h2><ul class="outcome-list">' +
+            (course.outcomes || []).map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') +
+          '</ul></section>' +
+          '<section><h2>커리큘럼</h2><div class="curriculum">' + curriculumHTML + '</div></section>' +
+        '</div>' +
+        '<aside><div class="instructor-card">' +
+          '<div class="avatar">🧑‍🌾</div>' +
+          '<h3>동진 코치</h3>' +
+          '<div class="role">벌크농부 · 벌크업 전문 트레이너</div>' +
+          '<ul><li>55kg → 88kg, 본인 증량 +33kg</li>' +
+          '<li>K-Classic 클래식 보디빌딩 3위</li>' +
+          '<li>마른 체형 전문 1:1 코칭</li>' +
+          '<li>원리를 가르쳐 자립까지</li></ul>' +
+        '</div></aside>' +
+      '</div></div>';
+
+    // 커리큘럼 아코디언
+    $all('.curr-section-head').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        btn.parentElement.classList.toggle('open');
+      });
+    });
+
+    // 수강 신청 — 로그인 필수
+    var enrollBtn = $('#enrollBtn');
+    if (enrollBtn) {
+      enrollBtn.addEventListener('click', function () {
+        if (!API.me()) {
+          toast('수강 신청은 로그인 후 가능합니다.');
+          setTimeout(gotoLogin, 600);
+          return;
+        }
+        if (course.price > 0) {
+          var ok = confirm(course.title + '\n수강료: ' + fmtPrice(course.price) +
+            '\n\n[데모] 결제 연동 전이라 바로 수강 등록됩니다. 진행할까요?');
+          if (!ok) return;
+        }
+        enrollBtn.disabled = true;
+        API.enroll(course.id).then(function () {
+          toast('수강 신청 완료! 강의실로 이동합니다.');
+          var firstLec = allLectures(course)[0];
+          setTimeout(function () {
+            location.href = 'classroom.html?course=' + course.id + (firstLec ? '&lecture=' + firstLec.id : '');
+          }, 700);
+        }).catch(function (e) {
+          console.error(e);
+          toast('수강 신청에 실패했습니다. 다시 시도해주세요.');
+          enrollBtn.disabled = false;
+        });
+      });
+    }
+  }
+})();
+</script>
+</body>
+</html>

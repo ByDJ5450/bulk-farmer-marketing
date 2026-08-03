@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 — 벌크농부 클래스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="siteHeader"></header>
+
+<main>
+  <div class="container" id="adminRoot">
+    <div class="empty-note" style="margin-top:60px">불러오는 중…</div>
+  </div>
+</main>
+
+<footer id="siteFooter"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/adapter-local.js"></script>
+<script src="js/adapter-supabase.js"></script>
+<script src="js/api.js"></script>
+<script>
+'use strict';
+(function () {
+  var root = $('#adminRoot');
+  var courses = [];
+
+  API.init().then(function () {
+    renderHeader('admin');
+    renderFooter();
+
+    var me = API.me();
+    if (!me) {
+      root.innerHTML = '<div class="empty-note" style="margin-top:60px">관리자 페이지는 코치 계정으로 로그인해야 들어올 수 있습니다.<br><br>' +
+        '<button class="btn btn-green btn-sm" type="button" onclick="gotoLogin()">로그인</button></div>';
+      return null;
+    }
+    if (me.role !== 'coach') {
+      root.innerHTML = '<div class="empty-note" style="margin-top:60px">' + esc(me.name) + '님은 일반 회원 계정입니다.<br>' +
+        '관리자 기능은 코치 계정 전용입니다.' +
+        (API.mode === 'local'
+          ? '<br><br>코치 계정이 필요하면 회원가입 시 <b>코치 코드</b>를 입력하세요. (README 참조)'
+          : '<br><br>서버 모드의 코치 지정 방법은 README의 "코치 계정 만들기"를 참조하세요.') +
+        '</div>';
+      return null;
+    }
+    return Promise.all([API.courses(), API.members()]);
+  }).then(function (r) {
+    if (!r) return;
+    courses = r[0];
+    buildLayout(r[1]);
+    renderEditors();
+  }).catch(function (e) {
+    console.error(e);
+    root.innerHTML = '<div class="empty-note" style="margin-top:60px">데이터를 불러오지 못했습니다. 네트워크를 확인해주세요.</div>';
+  });
+
+  /* ---------- 레이아웃 ---------- */
+  function buildLayout(members) {
+    var modeLabel = API.mode === 'supabase'
+      ? '서버 모드 — 수정 내용이 서버에 저장되어 모든 회원에게 반영됩니다.'
+      : '로컬 모드 — 수정 내용이 이 브라우저에만 저장됩니다.';
+
+    var memberRows = members.length
+      ? members.map(function (m) {
+          return '<tr><td>' + esc(m.name) + '</td><td>' + esc(m.email || '') + '</td>' +
+            '<td><span class="role-pill ' + (m.role === 'coach' ? 'role-coach' : 'role-member') + '">' +
+            (m.role === 'coach' ? '코치' : '회원') + '</span></td>' +
+            '<td>' + (m.joined ? new Date(m.joined).toLocaleDateString('ko-KR') : '-') + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="4" style="color:var(--dim)">아직 가입한 회원이 없습니다.</td></tr>';
+
+    var dataBlock = API.mode === 'local'
+      ? '<div class="admin-block">' +
+          '<h2>데이터 (로컬 모드)</h2>' +
+          '<p class="desc">강의·게시글·댓글·진도·회원 데이터를 백업하거나 다른 브라우저로 옮길 때 사용합니다.</p>' +
+          '<div class="admin-actions">' +
+            '<button class="btn btn-ghost btn-sm" id="exportBtn" type="button">⬇ JSON 내보내기</button>' +
+            '<label class="btn btn-ghost btn-sm" style="display:inline-block">⬆ JSON 가져오기<input id="importInput" type="file" accept=".json,application/json" style="display:none"></label>' +
+            '<button class="btn btn-red btn-sm" id="resetBtn" type="button">콘텐츠 초기화 (회원 유지)</button>' +
+          '</div></div>'
+      : '';
+
+    root.innerHTML =
+      '<h1 style="font-size:26px;font-weight:900;margin-top:32px">관리자</h1>' +
+      '<p style="color:var(--dim);font-size:14px;margin-top:4px">' + modeLabel + '</p>' +
+
+      '<div class="admin-block">' +
+        '<h2>강의 관리</h2>' +
+        '<p class="desc">강의별 제목·가격·커리큘럼을 수정하고, 각 강의에 유튜브 링크를 붙여넣으면 강의실에서 바로 재생됩니다. (일반 링크·youtu.be·쇼츠 링크 모두 인식)</p>' +
+        '<div id="courseEditors"></div>' +
+        '<div class="admin-actions" style="margin-top:20px">' +
+          '<button class="btn btn-dark btn-sm" id="addCourseBtn" type="button">+ 새 강의 만들기</button>' +
+          (courses.length === 0 ? '<button class="btn btn-ghost btn-sm" id="seedBtn" type="button">기본 강의 3종 올리기</button>' : '') +
+        '</div>' +
+      '</div>' +
+
+      '<div class="admin-block">' +
+        '<h2>회원 목록 <span style="font-size:14px;color:var(--dim);font-weight:500">' + members.length + '명</span></h2>' +
+        '<div style="overflow-x:auto"><table class="member-table">' +
+          '<thead><tr><th>이름</th><th>이메일</th><th>구분</th><th>가입일</th></tr></thead>' +
+          '<tbody>' + memberRows + '</tbody></table></div>' +
+      '</div>' +
+
+      '<div class="admin-block">' +
+        '<h2>공지 작성</h2>' +
+        '<p class="desc">커뮤니티 공지 게시판에 코치 이름으로 등록됩니다.</p>' +
+        '<div class="field"><label for="nTitle">제목</label><input id="nTitle" type="text" maxlength="80" placeholder="공지 제목"></div>' +
+        '<div class="field"><label for="nBody">내용</label><textarea id="nBody" placeholder="공지 내용"></textarea></div>' +
+        '<div class="admin-actions"><button class="btn btn-green btn-sm" id="noticeBtn" type="button">공지 등록</button></div>' +
+      '</div>' +
+      dataBlock;
+
+    bindLayout();
+  }
+
+  /* ---------- 강의 편집기 ---------- */
+  function findCourseLocal(id) {
+    for (var i = 0; i < courses.length; i++) {
+      if (courses[i].id === id) return courses[i];
+    }
+    return null;
+  }
+
+  function renderEditors() {
+    var el = $('#courseEditors');
+    if (!el) return;
+    el.innerHTML = courses.length ? courses.map(function (c) {
+      var sectionsHTML = c.sections.map(function (s) {
+        var lecturesHTML = s.lectures.map(function (l) {
+          return '<div class="admin-lecture-row" data-lid="' + esc(l.id) + '">' +
+            '<input data-f="ltitle" value="' + esc(l.title) + '" placeholder="강의 제목">' +
+            '<input data-f="dur" value="' + esc(l.duration) + '" placeholder="길이">' +
+            '<input data-f="url" value="' + esc(l.videoUrl) + '" placeholder="유튜브 링크 (예: https://youtu.be/...)">' +
+            '<button type="button" data-act="del-lecture" title="강의 삭제">✕</button></div>';
+        }).join('');
+        return '<div class="admin-section-box" data-sid="' + esc(s.id) + '">' +
+          '<div class="sec-row"><input data-f="stitle" value="' + esc(s.title) + '" placeholder="섹션 제목">' +
+          '<button class="btn btn-red btn-sm" type="button" data-act="del-section">섹션 삭제</button></div>' +
+          lecturesHTML +
+          '<button class="btn btn-ghost btn-sm" type="button" data-act="add-lecture" style="margin-top:6px">+ 강의 추가</button>' +
+          '</div>';
+      }).join('');
+
+      return '<div class="admin-course" data-cid="' + esc(c.id) + '">' +
+        '<div class="row">' +
+          '<input data-f="title" value="' + esc(c.title) + '" placeholder="강의명">' +
+          '<input data-f="tagline" value="' + esc(c.tagline) + '" placeholder="한 줄 소개">' +
+          '<input data-f="price" type="number" min="0" step="1000" value="' + Number(c.price) + '" placeholder="가격(원)">' +
+        '</div>' +
+        sectionsHTML +
+        '<div class="admin-actions">' +
+          '<button class="btn btn-ghost btn-sm" type="button" data-act="add-section">+ 섹션 추가</button>' +
+          '<button class="btn btn-green btn-sm" type="button" data-act="save">💾 저장</button>' +
+          '<button class="btn btn-red btn-sm" type="button" data-act="del-course">강의 삭제</button>' +
+        '</div>' +
+        '<p class="hint">저장을 누르면 홈·강의실에 바로 반영됩니다.</p>' +
+        '</div>';
+    }).join('') : '<div class="empty-note">등록된 강의가 없습니다. 새 강의를 만들거나 기본 강의 3종을 올려보세요.</div>';
+  }
+
+  // 화면 입력값 → courses 배열 반영 (구조 변경 전에도 호출해 입력 유실 방지)
+  function collectAll() {
+    $all('.admin-course').forEach(function (cEl) {
+      var course = findCourseLocal(cEl.getAttribute('data-cid'));
+      if (!course) return;
+      course.title = $('[data-f="title"]', cEl).value.trim() || course.title;
+      course.tagline = $('[data-f="tagline"]', cEl).value.trim();
+      course.price = Math.max(0, Number($('[data-f="price"]', cEl).value) || 0);
+      if (course.price === 0 && (course.badge === 'BEST' || course.badge === 'NEW')) {
+        // 가격을 0으로 바꾼 강의는 무료 표기
+        course.badge = '무료 공개';
+      }
+
+      $all('.admin-section-box', cEl).forEach(function (sEl) {
+        var sid = sEl.getAttribute('data-sid');
+        var section = null;
+        for (var i = 0; i < course.sections.length; i++) {
+          if (course.sections[i].id === sid) { section = course.sections[i]; break; }
+        }
+        if (!section) return;
+        section.title = $('[data-f="stitle"]', sEl).value.trim() || section.title;
+
+        $all('.admin-lecture-row', sEl).forEach(function (lEl) {
+          var lid = lEl.getAttribute('data-lid');
+          for (var j = 0; j < section.lectures.length; j++) {
+            if (section.lectures[j].id === lid) {
+              section.lectures[j].title = $('[data-f="ltitle"]', lEl).value.trim() || section.lectures[j].title;
+              section.lectures[j].duration = $('[data-f="dur"]', lEl).value.trim();
+              section.lectures[j].videoUrl = $('[data-f="url"]', lEl).value.trim();
+              break;
+            }
+          }
+        });
+      });
+    });
+  }
+
+  function bindLayout() {
+    $('#courseEditors').addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-act]');
+      if (!btn) return;
+      var act = btn.getAttribute('data-act');
+      var cEl = btn.closest('.admin-course');
+      if (!cEl) return;
+      var course = findCourseLocal(cEl.getAttribute('data-cid'));
+      if (!course) return;
+
+      if (act === 'save') {
+        collectAll();
+        var bad = [];
+        course.sections.forEach(function (s) {
+          s.lectures.forEach(function (l) {
+            if (l.videoUrl && !ytEmbed(l.videoUrl)) bad.push(l.title);
+          });
+        });
+        btn.disabled = true;
+        API.saveCourse(course).then(function () {
+          renderEditors();
+          toast(bad.length ? '저장했지만 인식 안 되는 링크: ' + bad.join(', ') : '저장했습니다.');
+        }).catch(function (err) {
+          console.error(err);
+          toast('저장에 실패했습니다. 다시 시도해주세요.');
+          btn.disabled = false;
+        });
+        return;
+      }
+
+      collectAll(); // 구조 변경 전 입력값 보존
+
+      if (act === 'add-section') {
+        course.sections.push({ id: uid(), title: '새 섹션', lectures: [] });
+      } else if (act === 'del-section') {
+        var sEl = btn.closest('.admin-section-box');
+        if (!confirm('이 섹션과 안의 강의를 모두 삭제할까요? (저장을 눌러야 확정됩니다)')) return;
+        course.sections = course.sections.filter(function (s) { return s.id !== sEl.getAttribute('data-sid'); });
+      } else if (act === 'add-lecture') {
+        var sEl2 = btn.closest('.admin-section-box');
+        course.sections.forEach(function (s) {
+          if (s.id === sEl2.getAttribute('data-sid')) {
+            s.lectures.push({ id: uid(), title: '새 강의', duration: '0:00', videoUrl: '' });
+          }
+        });
+      } else if (act === 'del-lecture') {
+        var lEl = btn.closest('.admin-lecture-row');
+        course.sections.forEach(function (s) {
+          s.lectures = s.lectures.filter(function (l) { return l.id !== lEl.getAttribute('data-lid'); });
+        });
+      } else if (act === 'del-course') {
+        if (!confirm('"' + course.title + '" 강의를 완전히 삭제할까요?')) return;
+        API.deleteCourse(course.id).then(function () {
+          courses = courses.filter(function (c) { return c.id !== course.id; });
+          renderEditors();
+          toast('삭제했습니다.');
+        }).catch(function (err) {
+          console.error(err);
+          toast('삭제에 실패했습니다.');
+        });
+        return;
+      }
+      renderEditors();
+    });
+
+    $('#addCourseBtn').addEventListener('click', function () {
+      collectAll();
+      var title = (prompt('새 강의 이름을 입력해주세요') || '').trim();
+      if (!title) return;
+      var colors = ['green', 'pink', 'dark'];
+      var course = {
+        id: uid(),
+        title: title,
+        thumbTitle: title,
+        tagline: '',
+        badge: 'NEW',
+        color: colors[courses.length % colors.length],
+        level: '입문',
+        weeks: '',
+        price: 0,
+        outcomes: [],
+        sections: [{ id: uid(), title: '섹션 1', lectures: [] }]
+      };
+      API.saveCourse(course).then(function () {
+        courses.push(course);
+        renderEditors();
+        toast('강의가 추가되었습니다. 커리큘럼을 채워주세요.');
+      }).catch(function (err) {
+        console.error(err);
+        toast('추가에 실패했습니다.');
+      });
+    });
+
+    var seedBtn = $('#seedBtn');
+    if (seedBtn) {
+      seedBtn.addEventListener('click', function () {
+        seedBtn.disabled = true;
+        var seedCourses = JSON.parse(JSON.stringify(window.SEED.courses));
+        Promise.all(seedCourses.map(function (c) { return API.saveCourse(c); })).then(function () {
+          courses = courses.concat(seedCourses);
+          renderEditors();
+          seedBtn.style.display = 'none';
+          toast('기본 강의 3종을 올렸습니다.');
+        }).catch(function (err) {
+          console.error(err);
+          toast('업로드에 실패했습니다.');
+          seedBtn.disabled = false;
+        });
+      });
+    }
+
+    /* 공지 */
+    $('#noticeBtn').addEventListener('click', function () {
+      var title = $('#nTitle').value.trim();
+      var body = $('#nBody').value.trim();
+      if (!title || !body) { toast('제목과 내용을 모두 입력해주세요.'); return; }
+      var btn = $('#noticeBtn');
+      btn.disabled = true;
+      API.addPost('notice', title, body).then(function () {
+        $('#nTitle').value = '';
+        $('#nBody').value = '';
+        toast('공지가 등록되었습니다.');
+      }).catch(function (err) {
+        console.error(err);
+        toast('등록에 실패했습니다.');
+      }).then(function () {
+        btn.disabled = false;
+      });
+    });
+
+    /* 데이터 (로컬 모드 전용) */
+    var exportBtn = $('#exportBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function () {
+        collectAll();
+        var blob = new Blob([JSON.stringify(API.exportData(), null, 2)], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'bulkclass_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('백업 파일을 내려받았습니다.');
+      });
+
+      $('#importInput').addEventListener('change', function (e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            API.importData(JSON.parse(reader.result));
+            toast('가져오기 완료. 새로고침합니다.');
+            setTimeout(function () { location.reload(); }, 700);
+          } catch (err) {
+            toast('가져오기 실패 — 올바른 백업 파일이 아닙니다.');
+          }
+          e.target.value = '';
+        };
+        reader.readAsText(file);
+      });
+
+      $('#resetBtn').addEventListener('click', function () {
+        if (!confirm('강의·게시글·댓글·진도가 초기 상태로 돌아갑니다. (회원 계정은 유지) 계속할까요?')) return;
+        API.resetData();
+        toast('초기화했습니다. 새로고침합니다.');
+        setTimeout(function () { location.reload(); }, 700);
+      });
+    }
+  }
+})();
+</script>
+</body>
+</html>

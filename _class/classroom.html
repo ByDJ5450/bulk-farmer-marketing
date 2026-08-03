@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>강의실 — 벌크농부 클래스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="siteHeader"></header>
+
+<main id="page"></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/adapter-local.js"></script>
+<script src="js/adapter-supabase.js"></script>
+<script src="js/api.js"></script>
+<script>
+'use strict';
+(function () {
+  var page = $('#page');
+  var course = null;
+  var myDone = [];          // 내가 완료한 강의 id 목록
+  var currentLecId = qsParam('lecture');
+
+  function note(html) {
+    page.innerHTML = '<div class="container"><div class="empty-note" style="margin-top:60px">' + html + '</div></div>';
+  }
+
+  API.init().then(function () {
+    renderHeader('courses');
+
+    if (!API.me()) {
+      note('강의실은 로그인 후 이용할 수 있습니다.<br><br>' +
+        '<button class="btn btn-green btn-sm" type="button" onclick="gotoLogin()">로그인 / 회원가입</button>');
+      return null;
+    }
+    return API.courses().then(function (courses) {
+      var id = qsParam('course');
+      for (var i = 0; i < courses.length; i++) {
+        if (courses[i].id === id) { course = courses[i]; break; }
+      }
+      if (!course) {
+        note('강의를 찾을 수 없습니다. <a href="index.html" style="color:var(--green-dark);font-weight:800">홈으로 돌아가기</a>');
+        return null;
+      }
+      return API.myEnrollments();
+    }).then(function (enr) {
+      if (!enr) return null;
+      if (enr.indexOf(course.id) < 0) {
+        note('아직 수강 신청하지 않은 강의입니다.<br><br>' +
+          '<a class="btn btn-green btn-sm" href="course.html?id=' + esc(course.id) + '">강의 소개 보러 가기</a>');
+        return null;
+      }
+      return API.myProgress(course.id).then(function (done) {
+        myDone = done;
+        return render();
+      });
+    });
+  }).catch(function (e) {
+    console.error(e);
+    note('데이터를 불러오지 못했습니다. 네트워크를 확인해주세요.');
+  });
+
+  function pct() {
+    var total = lectureCount(course);
+    return total ? Math.round(myDone.length / total * 100) : 0;
+  }
+  function isDone(lecId) { return myDone.indexOf(lecId) >= 0; }
+
+  function render() {
+    var lectures = allLectures(course);
+    if (!lectures.length) {
+      note('아직 등록된 강의 영상이 없습니다.');
+      return;
+    }
+
+    var lec = null;
+    for (var i = 0; i < lectures.length; i++) {
+      if (lectures[i].id === currentLecId) { lec = lectures[i]; break; }
+    }
+    if (!lec) { lec = lectures[0]; currentLecId = lec.id; }
+
+    var flatIdx = lectures.indexOf(lec);
+    var prevLec = flatIdx > 0 ? lectures[flatIdx - 1] : null;
+    var nextLec = flatIdx < lectures.length - 1 ? lectures[flatIdx + 1] : null;
+    var section = sectionOf(course, lec.id);
+
+    document.title = lec.title + ' — 벌크농부 클래스';
+
+    return API.lectureComments(course.id, lec.id).then(function (comments) {
+      var sidebarHTML = course.sections.map(function (s) {
+        var rows = s.lectures.map(function (l) {
+          var cls = 'sb-lecture' + (l.id === lec.id ? ' current' : '') + (isDone(l.id) ? ' done' : '');
+          return '<button class="' + cls + '" type="button" data-lec="' + esc(l.id) + '">' +
+            '<span class="check">✓</span><span class="t">' + esc(l.title) + '</span>' +
+            '<span class="dur">' + esc(l.duration) + '</span></button>';
+        }).join('');
+        return '<div class="sb-section-title">' + esc(s.title) + '</div>' + rows;
+      }).join('');
+
+      var embed = ytEmbed(lec.videoUrl);
+      var videoHTML = embed
+        ? '<iframe src="' + embed + '" title="' + esc(lec.title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
+        : '<div class="video-placeholder"><span class="icon">🎬</span>' +
+          '<strong>' + esc(lec.title) + '</strong>' +
+          '<small>영상 준비 중입니다.<br>관리자 페이지에서 이 강의에 유튜브 링크를 등록하면 여기서 바로 재생됩니다.</small></div>';
+
+      var done = isDone(lec.id);
+
+      page.innerHTML =
+        '<div class="classroom">' +
+          '<aside class="class-sidebar">' +
+            '<div class="sb-head"><a href="course.html?id=' + esc(course.id) + '">← 강의 소개로</a>' +
+            '<h2>' + esc(course.title) + '</h2></div>' +
+            '<div class="progress-wrap"><div class="progress-bar"><i style="width:' + pct() + '%"></i></div>' +
+            '<span>' + myDone.length + ' / ' + lectures.length + '강 완료 · ' + pct() + '%</span></div>' +
+            sidebarHTML +
+          '</aside>' +
+          '<div class="class-main">' +
+            '<div class="video-frame">' + videoHTML + '</div>' +
+            '<div class="lecture-head"><div>' +
+              '<div class="sec-name">' + esc(section ? section.title : '') + '</div>' +
+              '<h1>' + esc(lec.title) + '</h1></div></div>' +
+            '<div class="lecture-nav">' +
+              '<button class="btn btn-sm ' + (done ? 'btn-green' : 'btn-ghost') + '" id="doneBtn" type="button">' +
+                (done ? '✓ 수강 완료' : '수강 완료 체크') + '</button>' +
+              (prevLec ? '<button class="btn btn-sm btn-ghost" id="prevBtn" type="button">← 이전 강의</button>' : '') +
+              (nextLec ? '<button class="btn btn-sm btn-dark" id="nextBtn" type="button">다음 강의 →</button>' : '') +
+            '</div>' +
+            '<section class="comments">' +
+              '<h2>질문·소통 <span style="color:var(--dim);font-size:14px;font-weight:500">' + comments.length + '개</span></h2>' +
+              '<div class="comment-form">' +
+                '<textarea id="commentInput" placeholder="이 강의에 대한 질문이나 소감을 남겨주세요. 코치가 직접 답합니다."></textarea>' +
+                '<button class="btn btn-green btn-sm" id="commentBtn" type="button">등록</button>' +
+              '</div>' +
+              '<div class="comment-list">' +
+                (comments.length ? comments.map(commentHTML).join('') : '<div class="empty-note">첫 질문을 남겨보세요. 전부 답합니다.</div>') +
+              '</div>' +
+            '</section>' +
+          '</div>' +
+        '</div>';
+
+      bind(lec, prevLec, nextLec);
+    });
+  }
+
+  function go(lecId) {
+    currentLecId = lecId;
+    history.replaceState(null, '', 'classroom.html?course=' + course.id + '&lecture=' + lecId);
+    Promise.resolve(render()).then(function () { window.scrollTo(0, 0); });
+  }
+
+  function setDone(lecId, done) {
+    return API.setDone(course.id, lecId, done).then(function () {
+      var i = myDone.indexOf(lecId);
+      if (done && i < 0) myDone.push(lecId);
+      if (!done && i >= 0) myDone.splice(i, 1);
+    });
+  }
+
+  function bind(lec, prevLec, nextLec) {
+    $all('.sb-lecture').forEach(function (btn) {
+      btn.addEventListener('click', function () { go(btn.getAttribute('data-lec')); });
+    });
+
+    $('#doneBtn').addEventListener('click', function () {
+      var target = !isDone(lec.id);
+      setDone(lec.id, target).then(function () {
+        toast(target ? '수강 완료로 표시했습니다.' : '완료 표시를 해제했습니다.');
+        render();
+      }).catch(function (e) {
+        console.error(e);
+        toast('저장에 실패했습니다. 다시 시도해주세요.');
+      });
+    });
+
+    if (prevLec) $('#prevBtn').addEventListener('click', function () { go(prevLec.id); });
+    if (nextLec) $('#nextBtn').addEventListener('click', function () {
+      // 다음으로 넘어갈 때 현재 강의를 자동 완료 처리
+      var p = isDone(lec.id) ? Promise.resolve() : setDone(lec.id, true);
+      p.then(function () { go(nextLec.id); });
+    });
+
+    $('#commentBtn').addEventListener('click', function () {
+      var input = $('#commentInput');
+      var text = input.value.trim();
+      if (!text) { toast('내용을 입력해주세요.'); return; }
+      var btn = $('#commentBtn');
+      btn.disabled = true;
+      API.addLectureComment(course.id, lec.id, text).then(function () {
+        toast('등록되었습니다.');
+        return render();
+      }).catch(function (e) {
+        console.error(e);
+        toast('등록에 실패했습니다. 다시 시도해주세요.');
+        btn.disabled = false;
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

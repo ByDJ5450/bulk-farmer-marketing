@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>커뮤니티 — 벌크농부 클래스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="siteHeader"></header>
+
+<main>
+  <div class="container" id="page" style="padding-top:8px"></div>
+</main>
+
+<footer id="siteFooter"></footer>
+
+<!-- 글쓰기 모달 -->
+<div class="modal-overlay" id="writeModal">
+  <div class="modal">
+    <h2>글쓰기</h2>
+    <div class="field">
+      <label for="wCat">게시판</label>
+      <select id="wCat">
+        <option value="qna">질문 — 코치가 직접 답합니다</option>
+        <option value="free">자유 — 인증·잡담 환영</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="wTitle">제목</label>
+      <input id="wTitle" type="text" maxlength="80" placeholder="제목을 입력해주세요">
+    </div>
+    <div class="field">
+      <label for="wBody">내용</label>
+      <textarea id="wBody" placeholder="내용을 입력해주세요"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" id="wCancel" type="button">취소</button>
+      <button class="btn btn-green btn-sm" id="wSubmit" type="button">등록</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/adapter-local.js"></script>
+<script src="js/adapter-supabase.js"></script>
+<script src="js/api.js"></script>
+<script>
+'use strict';
+(function () {
+  var page = $('#page');
+  var posts = [];
+  var state = {
+    tab: 'all',
+    postId: qsParam('post') // 링크로 바로 진입 가능
+  };
+
+  var TABS = [
+    ['all', '전체'],
+    ['notice', '공지'],
+    ['qna', '질문'],
+    ['free', '자유']
+  ];
+
+  function refresh() {
+    return API.posts().then(function (list) {
+      posts = list;
+      render();
+    });
+  }
+
+  API.init().then(function () {
+    renderHeader('community');
+    renderFooter();
+    return refresh();
+  }).catch(function (e) {
+    console.error(e);
+    page.innerHTML = '<div class="empty-note" style="margin-top:60px">데이터를 불러오지 못했습니다. 네트워크를 확인해주세요.</div>';
+  });
+
+  function findPostLocal(id) {
+    for (var i = 0; i < posts.length; i++) {
+      if (String(posts[i].id) === String(id)) return posts[i];
+    }
+    return null;
+  }
+
+  function render() {
+    if (state.postId) renderDetail();
+    else renderList();
+  }
+
+  function renderList() {
+    var list = posts.filter(function (p) {
+      return state.tab === 'all' || p.cat === state.tab;
+    });
+
+    var tabsHTML = TABS.map(function (t) {
+      return '<button class="tab' + (state.tab === t[0] ? ' active' : '') + '" type="button" data-tab="' + t[0] + '">' + t[1] + '</button>';
+    }).join('');
+
+    var listHTML = list.length
+      ? list.map(function (p) {
+          return '<div class="post-item" data-post="' + esc(p.id) + '">' +
+            '<span class="cat-badge cat-' + esc(p.cat) + '">' + CAT_LABEL[p.cat] + '</span>' +
+            '<span class="p-title">' + esc(p.title) + '</span>' +
+            '<span class="p-meta">' + esc(p.name) + ' · ' + timeAgo(p.ts) +
+            (p.comments.length ? ' · 💬 ' + p.comments.length : '') + '</span></div>';
+        }).join('')
+      : '<div class="empty-note">아직 게시글이 없습니다. 첫 글을 남겨보세요.</div>';
+
+    page.innerHTML =
+      '<div class="community-top" style="margin-top:28px">' +
+        '<h1 style="font-size:26px;font-weight:900">커뮤니티</h1>' +
+        '<button class="btn btn-green btn-sm" id="writeBtn" type="button">✏️ 글쓰기</button>' +
+      '</div>' +
+      '<div class="tabs">' + tabsHTML + '</div>' +
+      '<div class="post-list">' + listHTML + '</div>';
+
+    $all('.tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        state.tab = btn.getAttribute('data-tab');
+        render();
+      });
+    });
+    $all('.post-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        state.postId = item.getAttribute('data-post');
+        history.replaceState(null, '', 'community.html?post=' + state.postId);
+        render();
+        window.scrollTo(0, 0);
+      });
+    });
+    $('#writeBtn').addEventListener('click', openModal);
+  }
+
+  function renderDetail() {
+    var p = findPostLocal(state.postId);
+    if (!p) {
+      state.postId = null;
+      history.replaceState(null, '', 'community.html');
+      renderList();
+      return;
+    }
+    page.innerHTML =
+      '<div style="margin-top:28px"><button class="btn btn-ghost btn-sm" id="backBtn" type="button">← 목록으로</button></div>' +
+      '<div class="post-detail" style="margin-top:14px">' +
+        '<span class="cat-badge cat-' + esc(p.cat) + '">' + CAT_LABEL[p.cat] + '</span>' +
+        '<h1>' + esc(p.title) + '</h1>' +
+        '<div class="p-meta">' + esc(p.name) + (p.coach ? ' <span class="coach" style="background:var(--green);color:#fff;font-size:11px;font-weight:800;border-radius:5px;padding:1px 7px">코치</span>' : '') +
+        ' · ' + timeAgo(p.ts) + '</div>' +
+        '<div class="p-body">' + esc(p.body) + '</div>' +
+        '<section class="comments">' +
+          '<h2>댓글 <span style="color:var(--dim);font-size:14px;font-weight:500">' + p.comments.length + '개</span></h2>' +
+          '<div class="comment-form">' +
+            '<textarea id="commentInput" placeholder="댓글을 남겨주세요"></textarea>' +
+            '<button class="btn btn-green btn-sm" id="commentBtn" type="button">등록</button>' +
+          '</div>' +
+          '<div class="comment-list">' +
+            (p.comments.length ? p.comments.map(commentHTML).join('') : '<div class="empty-note">첫 댓글을 남겨보세요.</div>') +
+          '</div>' +
+        '</section>' +
+      '</div>';
+
+    $('#backBtn').addEventListener('click', function () {
+      state.postId = null;
+      history.replaceState(null, '', 'community.html');
+      render();
+    });
+    $('#commentBtn').addEventListener('click', function () {
+      if (!API.me()) {
+        toast('댓글은 로그인 후 남길 수 있습니다.');
+        setTimeout(gotoLogin, 600);
+        return;
+      }
+      var text = $('#commentInput').value.trim();
+      if (!text) { toast('내용을 입력해주세요.'); return; }
+      var btn = $('#commentBtn');
+      btn.disabled = true;
+      API.addPostComment(p.id, text).then(function () {
+        toast('댓글이 등록되었습니다.');
+        return refresh();
+      }).catch(function (e) {
+        console.error(e);
+        toast('등록에 실패했습니다. 다시 시도해주세요.');
+        btn.disabled = false;
+      });
+    });
+  }
+
+  /* ---------- 글쓰기 모달 ---------- */
+  var modal = $('#writeModal');
+  function openModal() {
+    if (!API.me()) {
+      toast('글쓰기는 로그인 후 가능합니다.');
+      setTimeout(gotoLogin, 600);
+      return;
+    }
+    modal.classList.add('show');
+    $('#wTitle').focus();
+  }
+  function closeModal() {
+    modal.classList.remove('show');
+    $('#wTitle').value = '';
+    $('#wBody').value = '';
+  }
+  $('#wCancel').addEventListener('click', closeModal);
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeModal();
+  });
+  $('#wSubmit').addEventListener('click', function () {
+    var title = $('#wTitle').value.trim();
+    var body = $('#wBody').value.trim();
+    if (!title || !body) { toast('제목과 내용을 모두 입력해주세요.'); return; }
+    var btn = $('#wSubmit');
+    btn.disabled = true;
+    API.addPost($('#wCat').value, title, body).then(function () {
+      closeModal();
+      state.tab = 'all';
+      state.postId = null;
+      history.replaceState(null, '', 'community.html');
+      toast('게시글이 등록되었습니다.');
+      return refresh();
+    }).catch(function (e) {
+      console.error(e);
+      toast('등록에 실패했습니다. 다시 시도해주세요.');
+    }).then(function () {
+      btn.disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>

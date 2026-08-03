@@ -308,6 +308,57 @@ def drain_queue(st):
         notify(f"❌ 스레드 발행 실패\n{res}\n\n{draft.get('summary','')[:60]}")
 
 
+TELEGRAM = ROOT.parent / "_telegram"
+
+HELP = """🤖 텔레그램 명령
+
+현황        오늘 발행·예약 상태
+도움말      이 안내
+
+그 밖의 문장은 전부 작업 지시로 처리한다.
+예) 재현님 소재로 카드뉴스 만들어줘
+   블로그 글 하나 써서 클립보드에 올려줘
+   이번 주 발행량 정리해줘
+
+- 답까지 몇 분 걸린다. 다 되면 알림이 온다
+- **발행은 하지 않는다.** 만들고 승인 요청까지만 온다
+- 앞 대화를 이어서 문맥을 기억한다.
+  끊고 싶으면 앞에 "새 대화" 를 붙인다
+- 맥이 꺼져 있으면 켤 때 처리된다"""
+
+
+def handle_message(msg):
+    """텔레그램 텍스트 처리. 짧은 건 즉답, 나머지는 claude에게 넘긴다."""
+    cid = msg["chat"]["id"]
+    text = str(msg.get("text", "")).strip()
+
+    # 이 봇은 저장소 전체에 쓰기 권한이 있는 실행 통로다.
+    # 등록된 chat_id 외에는 무엇도 실행하지 않는다.
+    if str(cid) != str(TG.get("TELEGRAM_CHAT_ID")):
+        return
+
+    if text in ("현황", "상태", "/status"):
+        tg("sendMessage", chat_id=cid, text=queue_status())
+        return
+    if text in ("도움말", "help", "/help", "/start"):
+        tg("sendMessage", chat_id=cid, text=HELP)
+        return
+
+    # 오래 걸리는 작업이다. 여기서 기다리면 60초 워커가 막혀 승인 버튼이 먹통이 된다.
+    # 작업 파일을 남기고 분리된 프로세스로 띄운 뒤 즉시 빠져나간다.
+    import subprocess
+    q = TELEGRAM / "queue"
+    q.mkdir(parents=True, exist_ok=True)
+    f = q / f"{msg['message_id']}.json"
+    f.write_text(json.dumps({"text": text, "chat_id": cid}, ensure_ascii=False), encoding="utf-8")
+
+    tg("sendMessage", chat_id=cid, text=f"🤖 작업 시작합니다\n\n{text[:200]}")
+    subprocess.Popen(
+        ["/usr/bin/python3", str(TELEGRAM / "run_command.py"), str(f)],
+        cwd=str(ROOT.parent), start_new_session=True,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def daily_wrapup(st):
     """발행 창이 닫히는 23시 이후 하루 한 번, 그날 결과를 정리해 보낸다."""
     now = datetime.now()
@@ -375,11 +426,9 @@ def main():
     for u in results:
         last = max(last, u["update_id"])
 
-        # "현황" 이라고 보내면 지금 예약 상태를 돌려준다.
-        # 버튼을 여러 개 눌러놓고 나중에 확인하고 싶을 때 쓴다.
         msg = u.get("message")
-        if msg and str(msg.get("text", "")).strip() in ("현황", "상태", "/status"):
-            tg("sendMessage", chat_id=msg["chat"]["id"], text=queue_status())
+        if msg and str(msg.get("text", "")).strip():
+            handle_message(msg)
             continue
 
         cq = u.get("callback_query")

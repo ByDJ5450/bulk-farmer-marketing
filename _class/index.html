@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>벌크농부 클래스 — 멸치 탈출 온라인 강의</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="siteHeader"></header>
+
+<main>
+  <section class="hero">
+    <div class="container">
+      <span class="eyebrow">55kg → 88kg · K-Classic 클래식 보디빌딩 3위</span>
+      <h1>살 안 찌는 체질은 없습니다.<br><em>안 되는 방법</em>으로 하고 있을 뿐입니다.</h1>
+      <p class="lead">저도 55kg 멸치였습니다. 33kg을 늘리며 검증한 벌크업 원리를 강의로 옮겼습니다. 방법만 알려주지 않습니다 — 원리를 알고, 스스로 설계하는 힘을 만듭니다.</p>
+      <div class="hero-cta" id="heroCta">
+        <a class="btn btn-pink" href="course.html?id=starter">무료 강의 바로 보기</a>
+        <a class="btn btn-ghost" href="#courses">전체 강의 보기</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="stat-strip">
+    <div class="container">
+      <div class="stat"><strong>+33kg</strong><span>코치 본인의 증량 기록</span></div>
+      <div class="stat"><strong>3위</strong><span>K-Classic 클래식 보디빌딩</span></div>
+      <div class="stat"><strong>1:1</strong><span>모든 질문에 코치가 직접 답변</span></div>
+      <div class="stat"><strong>자립</strong><span>스스로 설계하는 능력까지</span></div>
+    </div>
+  </section>
+
+  <div class="container">
+    <section class="section" id="courses">
+      <div class="section-head">
+        <h2>강의</h2>
+      </div>
+      <div class="course-grid" id="courseGrid"><div class="empty-note">불러오는 중…</div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>커뮤니티</h2>
+        <a href="community.html">전체 보기 →</a>
+      </div>
+      <div class="post-list" id="recentPosts"></div>
+    </section>
+  </div>
+</main>
+
+<footer id="siteFooter"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/adapter-local.js"></script>
+<script src="js/adapter-supabase.js"></script>
+<script src="js/api.js"></script>
+<script>
+'use strict';
+(function () {
+  API.init().then(function () {
+    renderHeader('home');
+    renderFooter();
+
+    // 미로그인 시 히어로에 가입 버튼 추가
+    if (!API.me()) {
+      var cta = document.createElement('a');
+      cta.className = 'btn btn-ghost';
+      cta.href = 'auth.html?mode=signup';
+      cta.textContent = '회원가입';
+      $('#heroCta').appendChild(cta);
+    }
+
+    return Promise.all([
+      API.courses(),
+      API.posts(),
+      API.me() ? API.myEnrollments() : Promise.resolve([])
+    ]);
+  }).then(function (r) {
+    if (!r) return;
+    var courses = r[0], posts = r[1], myEnr = r[2];
+
+    // 수강 중인 강의는 진도율까지 표시
+    return Promise.all(courses.map(function (c) {
+      if (myEnr.indexOf(c.id) < 0) return Promise.resolve(null);
+      return API.myProgress(c.id).then(function (done) {
+        var total = lectureCount(c);
+        return { enrolled: true, pct: total ? Math.round(done.length / total * 100) : 0 };
+      });
+    })).then(function (statuses) {
+      $('#courseGrid').innerHTML = courses.length
+        ? courses.map(function (c, i) { return courseCardHTML(c, statuses[i]); }).join('')
+        : '<div class="empty-note">아직 등록된 강의가 없습니다.</div>';
+
+      var recent = posts.slice(0, 3);
+      $('#recentPosts').innerHTML = recent.length
+        ? recent.map(function (p) {
+            return '<a class="post-item" href="community.html?post=' + esc(p.id) + '">' +
+              '<span class="cat-badge cat-' + esc(p.cat) + '">' + CAT_LABEL[p.cat] + '</span>' +
+              '<span class="p-title">' + esc(p.title) + '</span>' +
+              '<span class="p-meta">' + esc(p.name) + ' · ' + timeAgo(p.ts) +
+              (p.comments.length ? ' · 💬 ' + p.comments.length : '') + '</span></a>';
+          }).join('')
+        : '<div class="empty-note">아직 게시글이 없습니다.</div>';
+    });
+  }).catch(function (e) {
+    console.error(e);
+    $('#courseGrid').innerHTML = '<div class="empty-note">데이터를 불러오지 못했습니다. 네트워크를 확인해주세요.</div>';
+  });
+})();
+</script>
+</body>
+</html>
