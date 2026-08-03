@@ -479,6 +479,7 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 7. `_context/card_news_agent.md` — 카드뉴스 HTML 출력 및 피그마 임포트 시
 8. `_context/design_style_guide.md` — 시각 디자인 규칙
 9. `_context/youtube_strategy.md` — 유튜브 기획 및 성과 기반 의사결정
+10. `_context/competitor_reference.md` — 같은 업계 채널 구조 분석 (제목·훅·연재 패턴)
 10. `_context/youtube_planner_agent.md` — StoryBrand 7단계 몰입 설계 유튜브 기획 시
 11. `_template/pptx_template.md` — PPT 슬라이드 제작 시
 12. `.claude/agents/sales-copywriter.md` — 전환 카피 작성 시 (서브에이전트가 자동 로드)
