@@ -43,9 +43,18 @@ for i in $(seq 1 40); do
 done
 curl -s -m 5 -o /dev/null https://api.anthropic.com/ || {
   notify "⚠️ 주간 리포트: 10분을 기다려도 네트워크에 연결되지 않았습니다"; exit 1; }
-claude -p "$PROMPT" --model claude-sonnet-5 --permission-mode acceptEdits \
-  --allowedTools Bash Read Write Edit Glob Grep
-RC=$?
+# 종료 코드는 믿을 수 없다. 2026-08-03에 코드 0으로 끝났는데 리포트가 없었다
+# (서브에이전트에 위임하고 턴을 끝내버렸다). 성공 판정은 **결과 파일**로 한다.
+OUT="_analytics/$(date +%F)_channel_report.md"
+RC=1
+for TRY in 1 2; do
+  [ -s "$OUT" ] &amp;&amp; { RC=0; break; }
+  [ $TRY -gt 1 ] &amp;&amp; sleep 60
+  claude -p "$PROMPT" --model claude-sonnet-5 --permission-mode acceptEdits \
+    --allowedTools Bash Read Write Edit Glob Grep
+  [ -s "$OUT" ] &amp;&amp; { RC=0; break; }
+  echo "[$(date +%T)] 리포트 시도 $TRY 실패 — 결과 파일 없음" >&amp;2
+done
 
 if [ $RC -ne 0 ]; then
   notify "⚠️ 주간 리포트 실패 (종료 코드 $RC)
