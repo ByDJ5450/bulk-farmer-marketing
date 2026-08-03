@@ -1,0 +1,16 @@
+[Unit]
+Description=벌크농부 텔레그램 승인 워커 (스레드·카드뉴스 발행)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/bulkfarmer
+ExecStart=/usr/bin/python3 /home/ubuntu/bulkfarmer/_threads/approve_worker.py
+# 네트워크가 아직이면 조용히 실패하고 다음 주기에 다시 시도한다.
+# 맥에서 겪은 부팅 직후 DNS 실패와 같은 상황이다.
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

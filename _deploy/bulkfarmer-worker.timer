@@ -1,0 +1,13 @@
+[Unit]
+Description=승인 워커 60초 주기
+
+[Timer]
+# 부팅 30초 뒤 시작, 이후 60초마다.
+# 버튼을 눌렀을 때 반응이 늦으면 사용자가 같은 버튼을 여러 번 누른다. 실제로 그랬다.
+OnBootSec=30s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

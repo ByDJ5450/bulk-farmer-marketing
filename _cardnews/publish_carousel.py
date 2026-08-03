@@ -60,8 +60,19 @@ def notify(text):
 
 
 def to_jpeg(png, out_dir):
-    """인스타그램은 PNG를 받지 않는다. JPEG로 변환한다."""
+    """인스타그램은 PNG를 받지 않는다. JPEG로 변환한다.
+
+    Pillow가 있으면 그걸 쓰고, 없으면 macOS 기본 도구 `sips` 로 넘어간다.
+    맥의 시스템 파이썬에는 Pillow가 없고, 리눅스 서버에는 sips가 없다.
+    이 워커를 서버로 옮겨도 그대로 돌아가야 하므로 양쪽을 다 받는다.
+    """
     out = out_dir / (png.stem + ".jpg")
+    try:
+        from PIL import Image
+        Image.open(png).convert("RGB").save(out, "JPEG", quality=90, optimize=True)
+        return out
+    except ImportError:
+        pass
     subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "90",
                     str(png), "--out", str(out)],
                    check=True, capture_output=True)
