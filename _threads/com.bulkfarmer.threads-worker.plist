@@ -8,7 +8,10 @@
     <string>/bin/zsh</string><string>-lc</string>
     <string>/usr/bin/python3 "$HOME/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_threads/approve_worker.py"</string>
   </array>
-  <key>StartInterval</key><integer>300</integer>
+  <!-- 60초. 5분이었을 때 버튼을 눌러도 반응이 없어 같은 버튼을 여러 번 누르게 됐다.
+       스크립트는 getUpdates 한 번 치고 바로 끝나므로 1분 주기가 부담되지 않는다.
+       발행 간격(100분)은 이 주기와 무관하게 워커 안에서 따로 지킨다. -->
+  <key>StartInterval</key><integer>60</integer>
   <key>RunAtLoad</key><true/>
   <key>StandardOutPath</key><string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_threads/worker.log</string>
   <key>StandardErrorPath</key><string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_threads/worker.err.log</string>
