@@ -51,7 +51,7 @@ for TRY in 1 2; do
   [ -s "$OUT" ] &amp;&amp; { RC=0; break; }
   [ $TRY -gt 1 ] &amp;&amp; sleep 60
   claude -p "$PROMPT" --model claude-sonnet-5 --permission-mode acceptEdits \
-    --allowedTools Bash Read Write Edit Glob Grep
+    --allowedTools Bash Read Write Edit Glob Grep WebSearch WebFetch
   [ -s "$OUT" ] &amp;&amp; { RC=0; break; }
   echo "[$(date +%T)] 리포트 시도 $TRY 실패 — 결과 파일 없음" >&amp;2
 done
