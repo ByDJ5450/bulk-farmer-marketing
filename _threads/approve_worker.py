@@ -67,28 +67,80 @@ def notify(text):
     tg("sendMessage", chat_id=TG.get("TELEGRAM_CHAT_ID"), text=text)
 
 
-def publish(text):
-    """Threads 2단계 발행. (성공여부, 결과) 반환."""
+IMAGES = ROOT / "images"
+
+
+def host_image(path):
+    """R2에 올려 공개 URL을 돌려준다. (URL, 삭제용 키) 또는 (None, 오류)."""
+    import re as _re
+    sys.path.insert(0, str(ROOT.parent / "_cardnews"))
+    import r2_upload as r2
+
+    p = Path(path)
+    if not p.is_absolute():
+        p = IMAGES / p
+    if not p.exists():
+        return None, f"이미지 없음: {p}"
+    # 키는 ASCII로 유지한다. 한글 경로는 인코딩 사고를 부른다.
+    slug = _re.sub(r"[^A-Za-z0-9._-]+", "-", p.name).strip("-") or "img.jpg"
+    key = f"threads/{date.today()}-{slug}"
+    code, err = r2.request("PUT", key, p.read_bytes(), "image/jpeg")
+    if code != 200:
+        return None, f"R2 업로드 실패 {code}: {err}"
+    base = (r2.cfg().get("R2_PUBLIC_URL", "") or "").rstrip("/")
+    return f"{base}/{urllib.parse.quote(key, safe='/')}", key
+
+
+def drop_image(key):
+    """발행 후 정리. Meta가 이미지를 가져가 저장하므로 원본은 필요 없다."""
+    try:
+        sys.path.insert(0, str(ROOT.parent / "_cardnews"))
+        import r2_upload as r2
+        r2.request("DELETE", key)
+    except Exception:
+        pass
+
+
+def publish(text, image=None):
+    """Threads 2단계 발행. image가 있으면 IMAGE 게시물. (성공여부, 결과) 반환."""
     uid, tok = META.get("THREADS_USER_ID"), META.get("THREADS_TOKEN")
     if not uid or not tok:
         return False, "meta.env에 THREADS_USER_ID / THREADS_TOKEN 없음"
 
-    r = api(f"https://graph.threads.net/v1.0/{uid}/threads",
-            {"media_type": "TEXT", "text": text, "access_token": tok})
+    body = {"media_type": "TEXT", "text": text, "access_token": tok}
+    key = None
+    if image:
+        url, key = host_image(image)
+        if not url:
+            # 이미지 때문에 글 자체를 못 내보내는 건 손해다. 텍스트로라도 낸다.
+            notify(f"⚠️ 스레드 이미지 첨부 실패 — 텍스트만 발행합니다\n{key}")
+            key = None
+        else:
+            body = {"media_type": "IMAGE", "image_url": url, "text": text, "access_token": tok}
+
+    r = api(f"https://graph.threads.net/v1.0/{uid}/threads", body)
     if "error" in r or "id" not in r:
+        if key:
+            drop_image(key)
         return False, f"컨테이너 생성 실패: {r.get('error', {}).get('message', r)}"
     cid = r["id"]
 
-    # 컨테이너가 처리될 시간을 준다 (텍스트는 보통 즉시)
-    for attempt in range(3):
+    # 컨테이너가 처리될 시간을 준다. 이미지는 Meta가 받아 가는 시간이 더 걸린다.
+    for attempt in range(6 if key else 3):
         time.sleep(2 if attempt == 0 else 5)
         p = api(f"https://graph.threads.net/v1.0/{uid}/threads_publish",
                 {"creation_id": cid, "access_token": tok})
         if "id" in p:
+            if key:
+                drop_image(key)
             return True, p["id"]
         msg = p.get("error", {}).get("message", "")
-        if "not ready" not in msg.lower() and attempt == 2:
+        if "not ready" not in msg.lower() and attempt >= 2:
+            if key:
+                drop_image(key)
             return False, f"발행 실패: {msg}"
+    if key:
+        drop_image(key)
     return False, "발행 실패: 컨테이너 준비 시간 초과"
 
 
@@ -218,7 +270,7 @@ def drain_queue(st):
         return
     f, doc, draft = q[0]
 
-    ok, res = publish(draft["text"])
+    ok, res = publish(draft["text"], draft.get("image"))
     cid, mid = draft.get("msg_chat_id"), draft.get("msg_id")
     if ok:
         draft["status"] = "published"
