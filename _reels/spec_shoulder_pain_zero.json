@@ -1,0 +1,41 @@
+{
+ "slug": "shoulder_pain_zero",
+ "segments": [
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/Rk2UH2TSk_I.mkv",
+   "start": 22.0,
+   "dur": 19.0,
+   "zoom": 1.0
+  },
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/Rk2UH2TSk_I.mkv",
+   "start": 196.0,
+   "dur": 16.0,
+   "zoom": 1.07
+  },
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/Rk2UH2TSk_I.mkv",
+   "start": 256.0,
+   "dur": 8.0,
+   "zoom": 1.0
+  }
+ ],
+ "cover": {
+  "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/Rk2UH2TSk_I.mkv",
+  "at": 207.0,
+  "blocks": [
+   {
+    "lines": [
+     "어깨 아파서",
+     "운동 못하겠다고요?"
+    ],
+    "size": 84,
+    "y": 1160,
+    "accent": 0
+   }
+  ]
+ },
+ "overlay": "/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_reels/shoulder_pain_zero/overlay.png",
+ "xfade": 0.25,
+ "outro_fade": 0.4
+}

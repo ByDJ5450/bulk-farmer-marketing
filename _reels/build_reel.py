@@ -61,10 +61,16 @@ PROJECT = ROOT.parent
 LOUDNORM = f"loudnorm=I=-16:TP=-1.5:LRA=11,aresample={SR}"
 
 # 세로 변환 필터 — 배경은 꽉 채워 자르고 흐리게, 전경은 가로 1080 맞춤
-VF_FIT = (f"[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,"
-          f"crop={W}:{H},boxblur=28:2,eq=brightness=-0.16[bg];"
-          f"[0:v]scale={W}:-2[fg];"
-          f"[bg][fg]overlay=0:{VIDEO_Y},format=yuv420p[v]")
+# zoom > 1 이면 전경을 키운 뒤 중앙을 잘라 펀치인 효과 (레퍼런스 릴스의 컷 대체 리듬)
+def vf_fit(zoom=1.0):
+    fgw = round(W * zoom / 2) * 2
+    fg = (f"[0:v]scale={fgw}:-2,crop={W}:ih*{W}/{fgw}[fg]" if zoom > 1.001
+          else f"[0:v]scale={W}:-2[fg]")
+    return (f"[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,"
+            f"crop={W}:{H},boxblur=28:2,eq=brightness=-0.16[bg];"
+            f"{fg};[bg][fg]overlay=0:{VIDEO_Y},format=yuv420p[v]")
+
+VF_FIT = vf_fit()
 
 
 def run(args):
@@ -210,7 +216,8 @@ def build_shots(seg, idx, tmp, dur):
             vin = ["-loop", "1", "-t", f"{d:.3f}", "-i", str(resolve(s["still"]))]
         else:
             vin = ["-ss", str(s["start"]), "-t", f"{d:.3f}", "-i", str(resolve(s["src"]))]
-        run(["ffmpeg", "-loglevel", "error", *vin, "-filter_complex", VF_FIT,
+        run(["ffmpeg", "-loglevel", "error", *vin, "-filter_complex",
+             vf_fit(float(s.get("zoom") or seg.get("zoom") or 1.0)),
              "-map", "[v]", "-an", "-r", "30", "-c:v", "libx264",
              "-preset", "medium", "-crf", "20", str(out), "-y"])
         parts.append(out)
@@ -340,6 +347,76 @@ def segment(seg, idx, tmp):
     return out, dur
 
 
+def panel_png(pnl, active, out):
+    """진행형 리스트 패널 — 영상 위에 상시 떠 있고, 말하는 항목만 강조된다.
+
+    레퍼런스(2026-08-13 제보 해부)의 트리 다이어그램 문법. 항목 리스트가 계속
+    보여서 저장 욕구를 만들고, 하이라이트가 '지금 어디쯤'을 알려준다.
+    """
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    size = pnl.get("size", 42)
+    x, y = pnl.get("x", 56), pnl.get("y", 560)
+    f = ImageFont.truetype(FONT, size, index=FONT_BOLD)
+    for i, item in enumerate(pnl["items"]):
+        col = "#F2B5A0" if i == active else "#FFFFFF"
+        mark = "●" if i == active else "○"
+        d.text((x, y), f"{mark} {item}", font=f, fill=col,
+               stroke_width=max(4, size // 10), stroke_fill=(0, 0, 0, 230))
+        y += int(size * 1.75)
+    img.save(out)
+    return out
+
+
+def apply_panel(spec, final, tmp):
+    pnl = spec.get("panel")
+    if not pnl:
+        return
+    total = probe_dur(final)
+    times = [float(t) for t in pnl["times"]]
+    wins = [(-1, 0.0, times[0])] + [
+        (i, times[i], times[i + 1] if i + 1 < len(times) else total)
+        for i in range(len(times))]
+    ins, chain, last = ["-i", str(final)], [], "0:v"
+    for j, (act, t0, t1) in enumerate(wins):
+        png = panel_png(pnl, act, tmp / f"panel{j}.png")
+        ins += ["-i", str(png)]
+        tag = "v" if j == len(wins) - 1 else f"p{j}"
+        chain.append(f"[{last}][{j + 1}:v]overlay=0:0:"
+                     f"enable='between(t,{t0:.2f},{t1:.2f})'[{tag}]")
+        last = tag
+    out = tmp / "panel.mp4"
+    run(["ffmpeg", "-loglevel", "error", *ins, "-filter_complex", ";".join(chain),
+         "-map", "[v]", "-map", "0:a?", "-c:v", "libx264", "-preset", "medium",
+         "-crf", "20", "-c:a", "copy", str(out), "-y"])
+    out.replace(final)
+    print(f"  패널 {len(pnl['items'])}항목 · 전환 {len(times)}회")
+
+
+def apply_bgm(spec, final, tmp):
+    """전 구간 저음량 BGM. 레퍼런스 3편 모두 무음 구간 0 — BGM이 바닥을 깔아준다.
+
+    IG·틱톡은 앱에서 음원을 얹는 정책이므로 이 옵션은 주로 유튜브 쇼츠 파일용.
+    """
+    bgm = spec.get("bgm")
+    if not bgm:
+        return
+    total = probe_dur(final)
+    gain = float(bgm.get("gain_db", -22))
+    out = tmp / "bgm.mp4"
+    run(["ffmpeg", "-loglevel", "error", "-i", str(final),
+         "-stream_loop", "-1", "-i", str(resolve(bgm["src"])),
+         "-filter_complex",
+         f"[1:a]atrim=0:{total:.3f},volume={gain}dB,"
+         f"afade=t=out:st={max(0, total - 1.2):.3f}:d=1.2[b];"
+         f"[0:a][b]amix=inputs=2:duration=first:normalize=0[a]",
+         "-map", "0:v", "-map", "[a]", "-c:v", "copy",
+         "-c:a", "aac", "-b:a", "160k", "-ar", str(SR),
+         "-t", f"{total:.3f}", str(out), "-y"])
+    out.replace(final)
+    print(f"  BGM {Path(str(bgm['src'])).name} @ {gain}dB")
+
+
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -349,23 +426,80 @@ def main():
 
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
-        parts, t = [], 0.0
+        parts, durs, t = [], [], 0.0
         for i, s in enumerate(spec["segments"]):
             shots = len(s.get("shots") or [1])
             print(f"  {i + 1}. {t:5.1f}s ~ {t + 0:5.1f}s  (컷 {shots}개)")
             p, d = segment(s, i, tmp)
             print(f"    길이  {d:.1f}초 → {t + d:.1f}s")
             parts.append(p)
+            durs.append(d)
             t += d
         if "cover" in spec:
             print(f"\n  커버 {build_cover(spec['cover'], outdir, tmp)}")
         lst = tmp / "list.txt"
         lst.write_text("".join(f"file '{p}'\n" for p in parts), encoding="utf-8")
         final = outdir / "reel.mp4"
-        run(["ffmpeg", "-loglevel", "error", "-f", "concat", "-safe", "0",
-             "-i", str(lst), "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-             "-c:a", "aac", "-b:a", "160k", "-ar", str(SR), "-movflags", "+faststart",
-             str(final), "-y"])
+        xf = float(spec.get("xfade", 0))
+        if xf and len(parts) > 1:
+            # 세그먼트 사이를 디졸브 + 오디오 크로스페이드로 잇는다.
+            # 하드컷의 점프컷·룸톤 단절을 없앤다. 0.2~0.3초가 자연스럽다.
+            ins, vf, af = [], [], []
+            for p in parts:
+                ins += ["-i", str(p)]
+            off, vprev, aprev = 0.0, "0:v", "0:a"
+            for i in range(1, len(parts)):
+                off += durs[i - 1] - xf
+                vtag, atag = f"v{i}", f"a{i}"
+                vf.append(f"[{vprev}][{i}:v]xfade=transition=fade"
+                          f":duration={xf}:offset={off:.3f}[{vtag}]")
+                af.append(f"[{aprev}][{i}:a]acrossfade=d={xf}[{atag}]")
+                vprev, aprev = vtag, atag
+            chain = ";".join(vf + af)
+            vmap = f"[{vprev}]"
+            if spec.get("overlay"):
+                ins += ["-i", str(resolve(spec["overlay"]))]
+                chain += f";[{vprev}][{len(parts)}:v]overlay=0:0[vo]"
+                vmap = "[vo]"
+            run(["ffmpeg", "-loglevel", "error", *ins,
+                 "-filter_complex", chain, "-map", vmap, "-map", f"[{aprev}]",
+                 "-r", "30", "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+                 "-c:a", "aac", "-b:a", "160k", "-ar", str(SR),
+                 "-movflags", "+faststart", str(final), "-y"])
+        elif spec.get("overlay"):
+            # 전체 구간 고정 오버레이 (제목·로고 등). 1080×1920 투명 PNG.
+            run(["ffmpeg", "-loglevel", "error", "-f", "concat", "-safe", "0",
+                 "-i", str(lst), "-i", str(resolve(spec["overlay"])),
+                 "-filter_complex", "[0:v][1:v]overlay=0:0[v]",
+                 "-map", "[v]", "-map", "0:a?",
+                 "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+                 "-c:a", "aac", "-b:a", "160k", "-ar", str(SR),
+                 "-movflags", "+faststart", str(final), "-y"])
+        else:
+            run(["ffmpeg", "-loglevel", "error", "-f", "concat", "-safe", "0",
+                 "-i", str(lst), "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+                 "-c:a", "aac", "-b:a", "160k", "-ar", str(SR), "-movflags", "+faststart",
+                 str(final), "-y"])
+        apply_panel(spec, final, tmp)
+        apply_bgm(spec, final, tmp)
+
+    of = float(spec.get("outro_fade", 0))
+    if of:
+        # 끝맺음 — 마지막 프레임을 잠깐 정지(hold)로 잡아두고 그 위에서 페이드아웃.
+        # 소스에서 구간을 연장하면 다음 문장 첫머리가 끼어들 수 있어 정지 프레임을 쓴다.
+        hold = float(spec.get("outro_hold", 0.45))
+        d = probe_dur(final)
+        end = d + hold
+        closed = final.with_name("reel_closed.mp4")
+        run(["ffmpeg", "-loglevel", "error", "-i", str(final),
+             "-vf", f"tpad=stop_mode=clone:stop_duration={hold},"
+                    f"fade=t=out:st={end - of:.3f}:d={of}",
+             "-af", f"apad=pad_dur={hold},"
+                    f"afade=t=out:st={max(0, end - of - 0.2):.3f}:d={of + 0.2}",
+             "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+             "-c:a", "aac", "-b:a", "160k", "-ar", str(SR),
+             "-movflags", "+faststart", str(closed), "-y"])
+        closed.replace(final)
 
     info = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration,size",

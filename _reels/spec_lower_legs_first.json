@@ -1,0 +1,35 @@
+{
+ "slug": "lower_legs_first",
+ "segments": [
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/V7DcKcUcazA.webm",
+   "start": 12.0,
+   "dur": 21.0,
+   "zoom": 1.0
+  },
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/V7DcKcUcazA.webm",
+   "start": 634.0,
+   "dur": 17.0,
+   "zoom": 1.07
+  }
+ ],
+ "cover": {
+  "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/V7DcKcUcazA.webm",
+  "at": 636.0,
+  "blocks": [
+   {
+    "lines": [
+     "다리가 얇으면",
+     "상체도 안 큽니다"
+    ],
+    "size": 84,
+    "y": 1160,
+    "accent": 0
+   }
+  ]
+ },
+ "overlay": "/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_reels/lower_legs_first/overlay.png",
+ "xfade": 0.25,
+ "outro_fade": 0.4
+}

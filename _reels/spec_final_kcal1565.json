@@ -1,0 +1,35 @@
+{
+ "slug": "final_kcal1565",
+ "segments": [
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/A_QO1oa0cPs.mp4",
+   "start": 381.0,
+   "dur": 23.0,
+   "zoom": 1.0
+  },
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/A_QO1oa0cPs.mp4",
+   "start": 612.0,
+   "dur": 16.0,
+   "zoom": 1.07
+  }
+ ],
+ "cover": {
+  "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/A_QO1oa0cPs.mp4",
+  "at": 618.0,
+  "blocks": [
+   {
+    "lines": [
+     "많이 먹는 줄 알았는데",
+     "하루 1,565kcal?"
+    ],
+    "size": 84,
+    "y": 1160,
+    "accent": 0
+   }
+  ]
+ },
+ "overlay": "/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_reels/final_kcal1565/overlay.png",
+ "xfade": 0.25,
+ "outro_fade": 0.4
+}

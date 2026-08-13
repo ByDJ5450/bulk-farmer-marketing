@@ -1,0 +1,29 @@
+{
+ "slug": "final_hardest",
+ "segments": [
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/A_QO1oa0cPs.mp4",
+   "start": 719.0,
+   "dur": 29.0,
+   "zoom": 1.0
+  }
+ ],
+ "cover": {
+  "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/A_QO1oa0cPs.mp4",
+  "at": 735.0,
+  "blocks": [
+   {
+    "lines": [
+     "벌크업 제일 힘든 게",
+     "뭔 줄 아세요?"
+    ],
+    "size": 84,
+    "y": 1160,
+    "accent": 0
+   }
+  ]
+ },
+ "overlay": "/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_reels/final_hardest/overlay.png",
+ "xfade": 0,
+ "outro_fade": 0.4
+}

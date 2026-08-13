@@ -1,0 +1,45 @@
+{
+ "slug": "demo_bench_triceps",
+ "xfade": 0.2,
+ "outro_fade": 0.4,
+ "overlay": "/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_reels/arm_triceps_half/overlay.png",
+ "panel": {
+  "items": [
+   "삼두는 근육 3개",
+   "제일 큰 건 장두",
+   "장두는 관절 2개",
+   "팔꿈치만 펴면 절반",
+   "어깨까지 써야 큰다"
+  ],
+  "times": [
+   8,
+   13,
+   18,
+   23,
+   33
+  ],
+  "x": 56,
+  "y": 560,
+  "size": 42
+ },
+ "segments": [
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/SsBCTiMztUE.mp4",
+   "start": 65.0,
+   "dur": 18.0,
+   "zoom": 1.0
+  },
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/SsBCTiMztUE.mp4",
+   "start": 83.0,
+   "dur": 15.0,
+   "zoom": 1.07
+  },
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/SsBCTiMztUE.mp4",
+   "start": 98.0,
+   "dur": 13.0,
+   "zoom": 1.0
+  }
+ ]
+}

@@ -1,0 +1,29 @@
+{
+ "slug": "upper_fly_same_weight",
+ "segments": [
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/3tqxv0YAk_0.mkv",
+   "start": 273.0,
+   "dur": 38.0,
+   "zoom": 1.0
+  }
+ ],
+ "cover": {
+  "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/3tqxv0YAk_0.mkv",
+  "at": 282.0,
+  "blocks": [
+   {
+    "lines": [
+     "무게는 그대로인데",
+     "자극이 2배?"
+    ],
+    "size": 84,
+    "y": 1160,
+    "accent": 0
+   }
+  ]
+ },
+ "overlay": "/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_reels/upper_fly_same_weight/overlay.png",
+ "xfade": 0,
+ "outro_fade": 0.4
+}

@@ -1,0 +1,41 @@
+{
+ "slug": "wk8_inbody_stall",
+ "segments": [
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/t6PzVJCTPXY.webm",
+   "start": 144.93,
+   "dur": 21.07,
+   "zoom": 1.0
+  },
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/t6PzVJCTPXY.webm",
+   "start": 255.0,
+   "dur": 22.0,
+   "zoom": 1.07
+  },
+  {
+   "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/t6PzVJCTPXY.webm",
+   "start": 464.0,
+   "dur": 12.0,
+   "zoom": 1.0
+  }
+ ],
+ "cover": {
+  "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/t6PzVJCTPXY.webm",
+  "at": 160.0,
+  "blocks": [
+   {
+    "lines": [
+     "근육이 줄었는데",
+     "몸은 커졌다고?"
+    ],
+    "size": 84,
+    "y": 1160,
+    "accent": 0
+   }
+  ]
+ },
+ "overlay": "/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_reels/wk8_inbody_stall/overlay.png",
+ "xfade": 0.25,
+ "outro_fade": 0.4
+}
