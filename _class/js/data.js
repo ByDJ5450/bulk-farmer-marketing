@@ -1,4 +1,4 @@
-// 벌크농부 클래스 — 초기 시드 데이터
+// 벌크농부 클래스 · 초기 시드 데이터
 // 실제 데이터는 브라우저 localStorage에 저장되며, 이 파일은 첫 방문 시 한 번만 복사된다.
 // 관리자 페이지(admin.html)에서 강의·영상 링크를 수정하면 localStorage에 반영된다.
 'use strict';
@@ -7,7 +7,7 @@ window.SEED = {
   courses: [
     {
       id: 'starter',
-      title: '마른 몸 탈출 스타터 — 벌크업 기초 4강',
+      title: '마른 몸 탈출 스타터 · 벌크업 기초 4강',
       thumbTitle: '마른 몸 탈출\n스타터',
       tagline: '벌크업을 시작하기 전에 반드시 알아야 할 원리만 골라 담은 무료 입문 강의입니다.',
       badge: '무료 공개',
@@ -42,7 +42,7 @@ window.SEED = {
     },
     {
       id: 'master',
-      title: '벌크업 마스터 클래스 — 12주 완성',
+      title: '벌크업 마스터 클래스 · 12주 완성',
       thumbTitle: '벌크업\n마스터 클래스',
       tagline: '진단부터 훈련 설계, 식단, 기록까지. 트레이너 없이 스스로 벌크업을 설계하는 능력을 만듭니다.',
       badge: 'BEST',
@@ -60,24 +60,24 @@ window.SEED = {
       sections: [
         {
           id: 'ms-s1',
-          title: '1단계 — 몸 진단',
+          title: '1단계 · 몸 진단',
           lectures: [
-            { id: 'ms-l1', title: '인바디 읽는 법 — 골격근량이 전부다', duration: '10:22', videoUrl: '' },
+            { id: 'ms-l1', title: '인바디 읽는 법 · 골격근량이 전부다', duration: '10:22', videoUrl: '' },
             { id: 'ms-l2', title: '내 유지 칼로리 찾기 실습', duration: '13:07', videoUrl: '' }
           ]
         },
         {
           id: 'ms-s2',
-          title: '2단계 — 훈련 설계',
+          title: '2단계 · 훈련 설계',
           lectures: [
-            { id: 'ms-l3', title: '점진적 과부하 — 무게 올리는 규칙', duration: '14:51', videoUrl: '' },
+            { id: 'ms-l3', title: '점진적 과부하 · 무게 올리는 규칙', duration: '14:51', videoUrl: '' },
             { id: 'ms-l4', title: '가슴·등·하체, 대근육 우선 배치', duration: '12:33', videoUrl: '' },
             { id: 'ms-l5', title: '한계 지점까지 가야 하는 이유', duration: '9:46', videoUrl: '' }
           ]
         },
         {
           id: 'ms-s3',
-          title: '3단계 — 식단 설계',
+          title: '3단계 · 식단 설계',
           lectures: [
             { id: 'ms-l6', title: '하루 3,500kcal 식단 짜는 법', duration: '15:12', videoUrl: '' },
             { id: 'ms-l7', title: '단백질은 하루 총량으로 관리한다', duration: '8:58', videoUrl: '' },
@@ -86,7 +86,7 @@ window.SEED = {
         },
         {
           id: 'ms-s4',
-          title: '4단계 — 기록과 유지',
+          title: '4단계 · 기록과 유지',
           lectures: [
             { id: 'ms-l9', title: '기록이 벌크업의 절반인 이유', duration: '11:40', videoUrl: '' },
             { id: 'ms-l10', title: '정체기 돌파 체크리스트', duration: '13:25', videoUrl: '' }
@@ -96,7 +96,7 @@ window.SEED = {
     },
     {
       id: 'diet',
-      title: '벌크업 식단 설계 — 많이 먹는 기술',
+      title: '벌크업 식단 설계 · 많이 먹는 기술',
       thumbTitle: '벌크업\n식단 설계',
       tagline: '"입이 짧아서 못 먹어요"를 해결합니다. 칼로리 잉여를 유지하는 현실적인 식사 전략.',
       badge: 'NEW',
@@ -115,7 +115,7 @@ window.SEED = {
           id: 'dt-s1',
           title: '원리 편',
           lectures: [
-            { id: 'dt-l1', title: '벌크업 식단의 3원칙 — 잉여·단백질·꾸준함', duration: '9:33', videoUrl: '' },
+            { id: 'dt-l1', title: '벌크업 식단의 3원칙 · 잉여·단백질·꾸준함', duration: '9:33', videoUrl: '' },
             { id: 'dt-l2', title: '살 안 찌는 체질? 먹는 양을 기록해보면', duration: '8:17', videoUrl: '' }
           ]
         },
@@ -132,7 +132,7 @@ window.SEED = {
     }
   ],
 
-  // 회원별 수강 목록 { 이메일: [courseId, ...] } — 가입·수강신청 시 채워진다
+  // 회원별 수강 목록 { 이메일: [courseId, ...] } · 가입·수강신청 시 채워진다
   enrollments: {},
 
   // 회원별 진도 { 이메일: { courseId: [lectureId, ...] } }

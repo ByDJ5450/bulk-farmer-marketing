@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>비밀번호 재설정 · 벌크농부 클래스</title>
+<script>
+  document.documentElement.classList.add('js');
+  // 복구 링크로 들어왔는지 해시로 즉시 판별 (Supabase가 해시를 소비하기 전에)
+  window.__isRecovery = /type=recovery|access_token/.test(location.hash);
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="stylesheet" href="css/style.css?v=250811a">
+</head>
+<body>
+
+<header id="siteHeader"></header>
+
+<main>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1>비밀번호 재설정</h1>
+
+      <!-- 1단계: 재설정 메일 요청 -->
+      <form id="requestForm">
+        <p class="sub">가입한 이메일로 재설정 링크를 보내드립니다.</p>
+        <div class="field">
+          <label for="rqEmail">이메일</label>
+          <input id="rqEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+        </div>
+        <div class="turnstile-box" id="resetTurnstile"></div>
+        <div class="auth-msg" id="rqMsg"></div>
+        <button class="btn btn-green" type="submit" id="rqBtn">재설정 링크 보내기</button>
+        <p class="auth-alt"><a href="auth.html">로그인으로 돌아가기</a></p>
+      </form>
+
+      <!-- 2단계: 새 비밀번호 설정 (복구 링크로 진입 시) -->
+      <form id="newpwForm" style="display:none">
+        <p class="sub">새 비밀번호를 입력해주세요.</p>
+        <div class="field">
+          <label for="npPw">새 비밀번호 (8자 이상 · 영문 대/소문자 · 특수문자 포함)</label>
+          <input id="npPw" type="password" autocomplete="new-password" placeholder="새 비밀번호" required>
+        </div>
+        <div class="field">
+          <label for="npPw2">새 비밀번호 확인</label>
+          <input id="npPw2" type="password" autocomplete="new-password" placeholder="다시 입력" required>
+        </div>
+        <div class="auth-msg" id="npMsg"></div>
+        <button class="btn btn-green" type="submit" id="npBtn">비밀번호 변경</button>
+      </form>
+
+      <p class="mode-note" id="modeNote"></p>
+    </div>
+  </div>
+</main>
+
+<footer id="siteFooter"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js?v=250811a"></script>
+<script src="js/data.js?v=250811a"></script>
+<script src="js/core.js?v=250811a"></script>
+<script src="js/adapter-local.js?v=250811a"></script>
+<script src="js/adapter-supabase.js?v=250811a"></script>
+<script src="js/api.js?v=250811a"></script>
+<script>
+'use strict';
+(function () {
+  function setMsg(el, text, ok) { el.textContent = text || ''; el.className = 'auth-msg ' + (ok ? 'ok' : 'err'); }
+
+  API.init().then(function () {
+    renderHeader('');
+    renderFooter();
+    if (window.__isRecovery) {
+      // 복구 링크 진입 → 새 비밀번호 폼
+      $('#requestForm').style.display = 'none';
+      $('#newpwForm').style.display = '';
+    }
+    if (API.mode !== 'supabase') {
+      $('#modeNote').textContent = '비밀번호 찾기는 서버 모드에서만 동작합니다.';
+    }
+  });
+
+  /* ---------- Turnstile (재설정 요청에도 필요) ---------- */
+  var TURNSTILE = (window.BULK_CONFIG && window.BULK_CONFIG.TURNSTILE_SITE_KEY || '').trim();
+  var tsToken = '', tsId = null, tsLoadFailed = false;
+  var TS_ERR = '보안 확인 위젯을 불러오지 못했습니다. 광고 차단(AdBlock)을 끄고 새로고침해주세요.';
+
+  if (TURNSTILE && !window.__isRecovery) {
+    var s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    s.async = true; s.defer = true;
+    s.onerror = function () { tsLoadFailed = true; $('#resetTurnstile').innerHTML = '<div style="font-size:13px;color:#E03030;font-weight:700">' + TS_ERR + '</div>'; };
+    s.onload = function () {
+      if (!window.turnstile) { s.onerror(); return; }
+      try {
+        tsId = window.turnstile.render('#resetTurnstile', {
+          sitekey: TURNSTILE, theme: 'light', action: 'reset',
+          callback: function (t) { tsToken = t; },
+          'expired-callback': function () { tsToken = ''; },
+          'error-callback': function () { tsToken = ''; }
+        });
+      } catch (e) { s.onerror(); }
+    };
+    document.head.appendChild(s);
+    setTimeout(function () { if (!window.turnstile && !tsLoadFailed) s.onerror(); }, 10000);
+  }
+
+  /* ---------- 1단계: 재설정 메일 요청 ---------- */
+  $('#requestForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (TURNSTILE) {
+      if (tsLoadFailed) { setMsg($('#rqMsg'), TS_ERR); return; }
+      if (!tsToken) { setMsg($('#rqMsg'), '"로봇이 아닙니다" 확인을 완료해주세요.'); return; }
+    }
+    var btn = $('#rqBtn');
+    btn.disabled = true;
+    setMsg($('#rqMsg'), '');
+    API.resetRequest($('#rqEmail').value, tsToken).then(function (r) {
+      tsToken = ''; if (window.turnstile && tsId !== null) { try { window.turnstile.reset(tsId); } catch (e) {} }
+      if (!r.ok) { setMsg($('#rqMsg'), r.msg); btn.disabled = false; return; }
+      setMsg($('#rqMsg'), '메일을 보냈습니다. 받은 메일함(스팸함 포함)에서 링크를 눌러주세요.', true);
+    }).catch(function (err) {
+      console.error(err);
+      setMsg($('#rqMsg'), '요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      btn.disabled = false;
+    });
+  });
+
+  /* ---------- 2단계: 새 비밀번호 설정 ---------- */
+  $('#newpwForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var pw = $('#npPw').value;
+    var pErr = pwError(pw);
+    if (pErr) { setMsg($('#npMsg'), pErr); return; }
+    if (pw !== $('#npPw2').value) { setMsg($('#npMsg'), '비밀번호 확인이 일치하지 않습니다.'); return; }
+    var btn = $('#npBtn');
+    btn.disabled = true;
+    setMsg($('#npMsg'), '');
+    API.setNewPassword(pw).then(function (r) {
+      if (!r.ok) { setMsg($('#npMsg'), r.msg); btn.disabled = false; return; }
+      setMsg($('#npMsg'), '비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.', true);
+      setTimeout(function () { location.href = 'auth.html'; }, 1500);
+    }).catch(function (err) {
+      console.error(err);
+      setMsg($('#npMsg'), '변경 중 오류가 발생했습니다. 링크가 만료됐다면 다시 요청해주세요.');
+      btn.disabled = false;
+    });
+  });
+
+  initPwToggles();   // 비밀번호 보기 토글
+  blockHangul($('#npPw')); blockHangul($('#npPw2'));  // 비밀번호에 한글 입력 차단
+})();
+</script>
+</body>
+</html>

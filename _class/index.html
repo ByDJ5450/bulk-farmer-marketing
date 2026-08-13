@@ -4,13 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>벌크농부 클래스</title>
+<script>
+  document.documentElement.classList.add('js');
+  // 이메일 인증 링크로 착지했는지 — supabase-js 가 해시를 소비하기 전에 판별
+  window.__emailVerified = /[?&]verified=1/.test(location.search) || /[#&]type=(signup|email)\b/.test(location.hash);
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=250811a">
 </head>
 <body>
 
@@ -19,10 +25,10 @@
 <main>
   <section class="hero">
     <div class="container">
-      <span class="eyebrow">55kg → 88kg · K-Classic 클래식 보디빌딩 3위</span>
-      <h1>살 안 찌는 체질은 없습니다.<br><em>안 되는 방법</em>으로 하고 있을 뿐입니다.</h1>
-      <p class="lead">저도 55kg 멸치였습니다.<br>33kg을 늘리며 검증한 벌크업 원리를 강의로 옮겼습니다.<br>방법만 알려주지 않습니다 — 원리를 알고, 스스로 설계하는 힘을 만듭니다.</p>
-      <div class="hero-cta" id="heroCta">
+      <span class="eyebrow animate__animated animate__fadeInUp">55kg → 88kg · K-Classic 클래식 보디빌딩 3위</span>
+      <h1 class="animate__animated animate__fadeInUp">살 안 찌는 체질은 없습니다.<br><em>안 되는 방법</em>으로 하고 있을 뿐입니다.</h1>
+      <p class="lead animate__animated animate__fadeInUp">저도 55kg이었습니다.<br>33kg을 늘리기까지 오래 걸렸고, 그때 알게 된 원리를 강의로 정리했습니다.<br>방법만 알려드리고 끝내지 않습니다. 원리를 알면 혼자서도 가능하니까요.</p>
+      <div class="hero-cta animate__animated animate__fadeInUp" id="heroCta">
         <a class="btn btn-pink" href="course.html?id=starter">무료 강의 바로 보기</a>
         <a class="btn btn-ghost" href="#courses">전체 강의 보기</a>
       </div>
@@ -38,20 +44,124 @@
     </div>
   </section>
 
+  <!-- 공감 — 이거 내 얘기다 -->
+  <div class="container">
+    <section class="section" id="empathy">
+      <div class="section-head rv"><h2>혹시, 이런 상황인가요?</h2></div>
+      <p class="sec-sub rv">마른 사람이라면 한 번쯤 겪습니다.</p>
+      <div class="pain-grid rv-stagger">
+        <div class="pain-card">남들은 가만히 있어도 찌는데<br>나만 안 찝니다</div>
+        <div class="pain-card">헬스장 3개월,<br>몸무게는 그대로였습니다</div>
+        <div class="pain-card">많이 먹으라는데<br>입이 짧아 못 먹겠습니다</div>
+        <div class="pain-card">유튜브는 많이 봤는데<br>뭘 믿어야 할지 모르겠습니다</div>
+        <div class="pain-card">중량은 느는데<br>몸은 커지지 않습니다</div>
+        <div class="pain-card">무슨 옷을 입어도<br>티가 안 납니다</div>
+      </div>
+      <p class="pain-foot rv">하나라도 그렇다면, <b>의지 문제가 아닙니다.</b></p>
+    </section>
+  </div>
+
+  <!-- 전환점 — 문제 정의를 바꾼다 -->
+  <section class="turn">
+    <div class="container rv-fade">
+      <span class="turn-eyebrow">그런데</span>
+      <h2>문제는 의지가 아니라<br>방법입니다</h2>
+      <p>저도 55kg에서 3년을 헤맸습니다.<br>더 열심히 해서 바뀐 게 아니었습니다. 원리를 알고 나서야 몸이 커졌습니다.</p>
+    </div>
+  </section>
+
+  <!-- 원리 — 왜 다른가 -->
+  <div class="container">
+    <section class="section">
+      <div class="section-head rv"><h2>그래서 원리부터 가르칩니다</h2></div>
+      <p class="sec-sub rv">일반 PT나 유튜브와 다른 점 세 가지.</p>
+      <div class="value-grid rv-stagger">
+        <div class="value-card">
+          <div class="v-num">01</div>
+          <h3>원리를 가르칩니다</h3>
+          <p>"이렇게 하세요"로 끝내지 않습니다.<br><strong>"왜 그런지"</strong>까지 이해시킵니다. 이유를 알면 혼자서도 가능합니다.</p>
+        </div>
+        <div class="value-card">
+          <div class="v-num">02</div>
+          <h3>스스로 서게 만듭니다</h3>
+          <p>제가 없어도 <strong>스스로 설계할 수 있습니다.</strong><br>그게 코칭이 끝나는 지점입니다.</p>
+        </div>
+        <div class="value-card">
+          <div class="v-num">03</div>
+          <h3>기록으로 쌓습니다</h3>
+          <p>기록이 벌크업의 절반입니다.<br>먹은 것과 든 무게를 남기면, <strong>정체기가 와도 스스로 답을 찾습니다.</strong></p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 강의 — 무엇을 배우나 -->
   <div class="container">
     <section class="section" id="courses">
-      <div class="section-head">
-        <h2>강의</h2>
+      <div class="section-head rv">
+        <h2>무엇을 배우나요</h2>
+        <a href="about.html">코치 소개 →</a>
       </div>
-      <div class="course-grid" id="courseGrid"><div class="empty-note">불러오는 중…</div></div>
+      <p class="sec-sub rv">원리를 4강으로 압축한 무료 강의부터, 12주 마스터 클래스까지.</p>
+      <div class="course-grid rv-stagger" id="courseGrid"><div class="empty-note">불러오는 중…</div></div>
     </section>
+  </div>
 
+  <!-- 후기 — 말보다 결과 -->
+  <div class="container">
+    <section class="section" id="proof">
+      <div class="section-head rv"><h2>성훈님의 12주</h2></div>
+      <p class="sec-sub rv">다마고치 프로젝트를 완주한 뒤의 기록입니다.</p>
+      <div class="review-highlight rv">
+        <div class="rh-quote">"3개월 동안 가장 많이 변한 게 뭐냐고요?<br><em>자존감이요.</em>"</div>
+        <p class="rh-detail">"사람을 대할 때 움츠러들지 않고요. 운동을 넘어서 삶을 대하는 태도가 달라진 것 같아요."</p>
+        <div class="rh-name">성훈님 · 12주 완주</div>
+      </div>
+      <div class="review-numbers rv-stagger">
+        <div class="rn-item"><span>체중</span><strong>69.6 → 76.2kg</strong></div>
+        <div class="rn-item"><span>골격근량</span><strong>33.1 → 36.8kg</strong></div>
+        <div class="rn-item"><span>3대 중량</span><strong>250 → 305kg</strong></div>
+        <div class="rn-item"><span>기간</span><strong>12주</strong></div>
+      </div>
+      <div class="review-video rv">
+        <div class="video-frame">
+          <iframe src="https://www.youtube.com/embed/A_QO1oa0cPs?rel=0" title="성훈님 12주 후기 영상"
+            loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen></iframe>
+        </div>
+        <p class="review-video-cap">성훈님이 직접 들려주는 12주</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- 자주 묻는 질문 -->
+  <div class="container">
     <section class="section">
-      <div class="section-head">
+      <div class="section-head rv"><h2>자주 묻는 질문</h2></div>
+      <div class="rv" id="faqBody"></div>
+    </section>
+  </div>
+
+  <!-- 최종 CTA -->
+  <section class="cta-band">
+    <div class="container rv-fade">
+      <h2>이번엔 방법을 바꿔봅시다</h2>
+      <p>무료 강의 4강이면 왜 지금까지 안 됐는지 보입니다.<br>결심은 그다음에 해도 늦지 않습니다.</p>
+      <div class="cta-actions">
+        <a class="btn btn-pink" href="course.html?id=starter">무료 강의 바로 보기</a>
+        <a class="btn btn-ghost" href="about.html">코치가 궁금하다면</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 커뮤니티 -->
+  <div class="container">
+    <section class="section">
+      <div class="section-head rv">
         <h2>커뮤니티</h2>
         <a href="community.html">전체 보기 →</a>
       </div>
-      <div class="post-list" id="recentPosts"></div>
+      <div class="post-list rv-stagger" id="recentPosts"></div>
     </section>
   </div>
 </main>
@@ -59,18 +169,35 @@
 <footer id="siteFooter"></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js"></script>
-<script src="js/data.js"></script>
-<script src="js/core.js"></script>
-<script src="js/adapter-local.js"></script>
-<script src="js/adapter-supabase.js"></script>
-<script src="js/api.js"></script>
+<script src="js/config.js?v=250811a"></script>
+<script src="js/data.js?v=250811a"></script>
+<script src="js/core.js?v=250811a"></script>
+<script src="js/adapter-local.js?v=250811a"></script>
+<script src="js/adapter-supabase.js?v=250811a"></script>
+<script src="js/api.js?v=250811a"></script>
 <script>
 'use strict';
 (function () {
   API.init().then(function () {
     renderHeader('home');
     renderFooter();
+    $('#faqBody').innerHTML = faqHTML();
+
+    // 이메일 인증 링크로 방금 들어온 경우 — 완료 안내 창
+    if (window.__emailVerified) {
+      var loggedIn = !!API.me();
+      showModal({
+        icon: '✅',
+        title: '이메일 인증이 완료됐습니다',
+        body: loggedIn
+          ? '인증이 끝나 바로 로그인됐습니다. 지금부터 모든 강의를 이용하실 수 있습니다.'
+          : '이메일 인증이 완료됐습니다. 이제 로그인해서 시작해주세요.',
+        btnText: loggedIn ? '시작하기' : '로그인하러 가기',
+        onClose: function () { if (!loggedIn) location.href = 'auth.html'; }
+      });
+      // 주소창의 인증 파라미터·해시 제거 (새로고침 시 재노출 방지)
+      if (history.replaceState) history.replaceState(null, '', location.pathname);
+    }
 
     // 미로그인 시 히어로에 가입 버튼 추가
     if (!API.me()) {
@@ -84,18 +211,22 @@
     return Promise.all([
       API.courses(),
       API.posts(),
-      API.me() ? API.myEnrollments() : Promise.resolve([])
+      API.me() ? API.myEnrollments() : Promise.resolve([]),
+      API.reviewStats().catch(function () { return {}; })
     ]);
   }).then(function (r) {
     if (!r) return;
-    var courses = r[0], posts = r[1], myEnr = r[2];
+    var courses = r[0], posts = r[1], myEnr = r[2], stats = r[3] || {};
 
-    // 수강 중인 강의는 진도율까지 표시
+    // 수강 중인 강의는 진도율까지, 모든 카드에 평균 별점 표시
     return Promise.all(courses.map(function (c) {
-      if (myEnr.indexOf(c.id) < 0) return Promise.resolve(null);
+      var base = { rating: stats[c.id] || null };
+      if (myEnr.indexOf(c.id) < 0) return Promise.resolve(base);
       return API.myProgress(c.id).then(function (done) {
         var total = lectureCount(c);
-        return { enrolled: true, pct: total ? Math.round(done.length / total * 100) : 0 };
+        base.enrolled = true;
+        base.pct = total ? Math.round(done.length / total * 100) : 0;
+        return base;
       });
     })).then(function (statuses) {
       $('#courseGrid').innerHTML = courses.length
@@ -117,6 +248,29 @@
     console.error(e);
     $('#courseGrid').innerHTML = '<div class="empty-note">데이터를 불러오지 못했습니다. 네트워크를 확인해주세요.</div>';
   });
+
+  // 스크롤 캐스케이드 — 뷰포트에 닿거나 이미 지나간 요소는 반드시 노출된다.
+  // (앵커 점프·빠른 스크롤로 건너뛰어도 숨은 채 남지 않게 스크롤 기준으로 판정)
+  var items = [].slice.call(document.querySelectorAll('.rv, .rv-fade, .rv-stagger'));
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (reduce) {
+    items.forEach(function (el) { el.classList.add('in'); });
+  } else {
+    var reveal = function () {
+      var trigger = window.innerHeight * 0.9;
+      items = items.filter(function (el) {
+        if (el.getBoundingClientRect().top < trigger) { el.classList.add('in'); return false; }
+        return true;                       // 아직 아래에 있는 것만 남겨 재관찰
+      });
+    };
+    reveal();
+    window.addEventListener('scroll', function () { requestAnimationFrame(reveal); }, { passive: true });
+    window.addEventListener('resize', reveal, { passive: true });
+    window.addEventListener('load', reveal);
+    // 안전장치 — 어떤 이유로든 남은 요소는 3초 뒤 모두 노출
+    setTimeout(function () { items.forEach(function (el) { el.classList.add('in'); }); }, 3000);
+  }
 })();
 </script>
 </body>

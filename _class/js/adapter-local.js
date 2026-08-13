@@ -21,6 +21,7 @@ var LocalAPI = (function () {
           db = parsed;
           db.comments = db.comments || {};
           db.posts = db.posts || [];
+          db.reviews = db.reviews || {};   // { courseId: [ {id, authorId, email, name, coach, rating, text, ts} ] }
           // 계정 도입 전 구버전 데이터 이관 (수강·진도를 회원 단위 구조로)
           if (!db.enrollments || Array.isArray(db.enrollments)) db.enrollments = {};
           var oldShape = false;
@@ -35,6 +36,7 @@ var LocalAPI = (function () {
       console.error('저장 데이터 손상 — 시드로 복구합니다', e);
     }
     db = JSON.parse(JSON.stringify(window.SEED));
+    db.reviews = db.reviews || {};   // SEED에는 후기가 없으므로 보장
     save();
   }
 
@@ -83,7 +85,7 @@ var LocalAPI = (function () {
     return email ? findUser(email) : null;
   }
   function pub(u) {
-    return u ? { id: u.id, name: u.name, email: u.email, role: u.role, joined: u.joined } : null;
+    return u ? { id: u.id, name: u.name, nickname: u.nickname || u.name, email: u.email, role: u.role, joined: u.joined, phone: u.phone || '' } : null;
   }
 
   /* ----- 공개 API ----- */
@@ -94,16 +96,18 @@ var LocalAPI = (function () {
 
     me: function () { return pub(sessionUser()); },
 
-    signup: function (name, email, pw, coachCode) {
+    signup: function (name, nickname, email, pw, coachCode, consent) {
       name = String(name).trim();
+      nickname = String(nickname).trim();
       email = String(email).trim().toLowerCase();
       coachCode = String(coachCode || '').trim();
-      if (name.length < 2) return Promise.resolve({ ok: false, msg: '이름(닉네임)은 2자 이상 입력해주세요.' });
+      var nErr = nameError(name); if (nErr) return Promise.resolve({ ok: false, msg: nErr });
+      if (nickname.length < 2) return Promise.resolve({ ok: false, msg: '닉네임은 2자 이상 입력해주세요.' });
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Promise.resolve({ ok: false, msg: '이메일 형식이 올바르지 않습니다.' });
-      if (String(pw).length < 6) return Promise.resolve({ ok: false, msg: '비밀번호는 6자 이상이어야 합니다.' });
+      var pErr = pwError(pw); if (pErr) return Promise.resolve({ ok: false, msg: pErr });
       if (findUser(email)) return Promise.resolve({ ok: false, msg: '이미 가입된 이메일입니다. 로그인해주세요.' });
-      var dupName = users().some(function (u) { return u.name === name; });
-      if (dupName) return Promise.resolve({ ok: false, msg: '이미 사용 중인 이름입니다. 다른 이름을 골라주세요.' });
+      var dupNick = users().some(function (u) { return (u.nickname || u.name) === nickname; });
+      if (dupNick) return Promise.resolve({ ok: false, msg: '이미 사용 중인 닉네임입니다. 다른 닉네임을 골라주세요.' });
       if (coachCode && coachCode !== COACH_CODE) return Promise.resolve({ ok: false, msg: '코치 코드가 올바르지 않습니다. 일반 가입은 비워두세요.' });
 
       var salt = uid();
@@ -112,11 +116,19 @@ var LocalAPI = (function () {
         list.push({
           id: uid(),
           name: name,
+          nickname: nickname,
           email: email,
           salt: salt,
           hash: hash,
           role: coachCode === COACH_CODE ? 'coach' : 'member',
-          joined: Date.now()
+          joined: Date.now(),
+          phone: (consent && consent.phone) || '',
+          consent: {
+            terms: true,
+            privacy: true,
+            marketing: !!(consent && consent.marketing),
+            agreedAt: new Date().toISOString()
+          }
         });
         saveUsers(list);
         localStorage.setItem(SESSION_KEY, email);
@@ -125,13 +137,64 @@ var LocalAPI = (function () {
     },
 
     login: function (email, pw) {
+      // 보안: 계정 존재 여부를 노출하지 않도록 실패 메시지를 하나로 통일한다
+      // (없는 이메일/틀린 비밀번호를 구분하면 가입 이메일을 캐낼 수 있다 — user enumeration)
+      var FAIL = '이메일 또는 비밀번호가 올바르지 않습니다.';
       var user = findUser(email);
-      if (!user) return Promise.resolve({ ok: false, msg: '가입되지 않은 이메일입니다.' });
+      if (!user) return Promise.resolve({ ok: false, msg: FAIL });
       return hashPw(pw, user.salt).then(function (hash) {
-        if (hash !== user.hash) return { ok: false, msg: '비밀번호가 일치하지 않습니다.' };
+        if (hash !== user.hash) return { ok: false, msg: FAIL };
         localStorage.setItem(SESSION_KEY, user.email);
         return { ok: true };
       });
+    },
+
+    resetRequest: function () {
+      return Promise.resolve({ ok: false, msg: '로컬 모드에서는 비밀번호 찾기를 지원하지 않습니다. (서버 모드 전용)' });
+    },
+    // 이메일(아이디) 찾기 — 이름+휴대폰 둘 다 일치할 때만 마스킹된 이메일 반환
+    findEmail: function (name, phone) {
+      name = String(name || '').trim();
+      var digits = String(phone || '').replace(/[^0-9]/g, '');
+      if (name.length < 2 || digits.length < 10) return Promise.resolve({ ok: true, found: false });
+      var u = users().filter(function (x) {
+        return x.name === name && String(x.phone || '').replace(/[^0-9]/g, '') === digits;
+      })[0];
+      if (!u) return Promise.resolve({ ok: true, found: false });
+      var local = String(u.email).split('@')[0], domain = String(u.email).split('@')[1];
+      var masked = local.length <= 2
+        ? local.slice(0, 1) + '*@' + domain
+        : local.slice(0, 2) + new Array(local.length - 1).join('*') + '@' + domain;
+      return Promise.resolve({ ok: true, found: true, masked: masked });
+    },
+    setNewPassword: function () {
+      return Promise.resolve({ ok: false, msg: '로컬 모드에서는 지원되지 않습니다.' });
+    },
+    updatePhone: function (phone) {
+      var u = sessionUser();
+      if (!u) return Promise.resolve({ ok: false, msg: '로그인이 필요합니다.' });
+      var digits = String(phone).replace(/[^0-9]/g, '');
+      if (!/^01[016789][0-9]{7,8}$/.test(digits)) return Promise.resolve({ ok: false, msg: '휴대폰 번호를 정확히 입력해주세요.' });
+      var formatted = digits.replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3');
+      var list = users();
+      for (var i = 0; i < list.length; i++) { if (list[i].email === u.email) { list[i].phone = formatted; break; } }
+      saveUsers(list);
+      return Promise.resolve({ ok: true, phone: formatted });
+    },
+    deleteAccount: function () {
+      var u = sessionUser();
+      if (!u) return Promise.resolve({ ok: false, msg: '로그인이 필요합니다.' });
+      saveUsers(users().filter(function (x) { return x.email !== u.email; }));
+      localStorage.removeItem(SESSION_KEY);
+      return Promise.resolve({ ok: true });
+    },
+
+    // 소셜 로그인은 서버(Supabase) 모드에서만 동작한다
+    oauthLogin: function () {
+      return Promise.resolve({ ok: false, msg: '소셜 로그인은 서버 모드에서만 가능합니다.' });
+    },
+    completeSocialProfile: function () {
+      return Promise.resolve({ ok: false, msg: '소셜 로그인은 서버 모드에서만 가능합니다.' });
     },
 
     logout: function () {
@@ -139,13 +202,12 @@ var LocalAPI = (function () {
       return Promise.resolve();
     },
 
+    // 실명 변경 (비공개) — 중복 허용
     updateName: function (name) {
       var u = sessionUser();
       if (!u) return Promise.resolve({ ok: false, msg: '로그인이 필요합니다.' });
       name = String(name).trim();
-      if (name.length < 2) return Promise.resolve({ ok: false, msg: '이름(닉네임)은 2자 이상 입력해주세요.' });
-      var dup = users().some(function (x) { return x.name === name && x.email !== u.email; });
-      if (dup) return Promise.resolve({ ok: false, msg: '이미 사용 중인 이름입니다.' });
+      var nErr = nameError(name); if (nErr) return Promise.resolve({ ok: false, msg: nErr });
       var list = users();
       for (var i = 0; i < list.length; i++) {
         if (list[i].email === u.email) { list[i].name = name; break; }
@@ -154,10 +216,26 @@ var LocalAPI = (function () {
       return Promise.resolve({ ok: true });
     },
 
+    // 닉네임 변경 (공개) — 중복 불가
+    updateNickname: function (nickname) {
+      var u = sessionUser();
+      if (!u) return Promise.resolve({ ok: false, msg: '로그인이 필요합니다.' });
+      nickname = String(nickname).trim();
+      if (nickname.length < 2) return Promise.resolve({ ok: false, msg: '닉네임은 2자 이상 입력해주세요.' });
+      var dup = users().some(function (x) { return (x.nickname || x.name) === nickname && x.email !== u.email; });
+      if (dup) return Promise.resolve({ ok: false, msg: '이미 사용 중인 닉네임입니다.' });
+      var list = users();
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].email === u.email) { list[i].nickname = nickname; break; }
+      }
+      saveUsers(list);
+      return Promise.resolve({ ok: true });
+    },
+
     updatePassword: function (pw) {
       var u = sessionUser();
       if (!u) return Promise.resolve({ ok: false, msg: '로그인이 필요합니다.' });
-      if (String(pw).length < 6) return Promise.resolve({ ok: false, msg: '비밀번호는 6자 이상이어야 합니다.' });
+      var pErr = pwError(pw); if (pErr) return Promise.resolve({ ok: false, msg: pErr });
       var salt = uid();
       return hashPw(pw, salt).then(function (hash) {
         var list = users();
@@ -275,10 +353,71 @@ var LocalAPI = (function () {
       if (!db.comments[key]) db.comments[key] = [];
       db.comments[key].push({
         id: uid(),
-        name: u.name,
+        name: u.nickname || u.name,
         coach: u.role === 'coach',
         text: text,
         ts: Date.now()
+      });
+      save();
+      return Promise.resolve();
+    },
+
+    /* 수강평·별점 */
+    courseReviews: function (courseId) {
+      var arr = (db.reviews[courseId] || []).slice().sort(function (a, b) { return b.ts - a.ts; });
+      return Promise.resolve(arr.map(function (r) {
+        return { id: r.id, name: r.name, coach: r.coach, authorId: r.authorId, rating: r.rating, text: r.text, ts: r.ts };
+      }));
+    },
+
+    reviewStats: function () {
+      var m = {};
+      Object.keys(db.reviews || {}).forEach(function (cid) {
+        var list = db.reviews[cid] || [];
+        if (!list.length) return;
+        var sum = list.reduce(function (t, r) { return t + r.rating; }, 0);
+        m[cid] = { sum: sum, count: list.length, avg: sum / list.length };
+      });
+      return Promise.resolve(m);
+    },
+
+    myReview: function (courseId) {
+      var u = sessionUser();
+      if (!u) return Promise.resolve(null);
+      var mine = (db.reviews[courseId] || []).filter(function (r) { return r.email === u.email; })[0];
+      return Promise.resolve(mine ? { id: mine.id, rating: mine.rating, text: mine.text, ts: mine.ts } : null);
+    },
+
+    addReview: function (courseId, rating, text) {
+      var u = sessionUser();
+      if (!u) return Promise.reject(new Error('로그인이 필요합니다'));
+      var enrolled = (db.enrollments[u.email] || []).indexOf(courseId) >= 0;
+      if (!enrolled && u.role !== 'coach') {
+        return Promise.reject(new Error('수강 후기는 해당 강의를 수강한 회원만 작성할 수 있습니다.'));
+      }
+      rating = Math.max(1, Math.min(5, parseInt(rating, 10) || 0));
+      if (!db.reviews[courseId]) db.reviews[courseId] = [];
+      var list = db.reviews[courseId];
+      var existing = null;
+      for (var i = 0; i < list.length; i++) { if (list[i].email === u.email) { existing = list[i]; break; } }
+      if (existing) {
+        existing.rating = rating; existing.text = String(text || '').trim(); existing.ts = Date.now();
+      } else {
+        list.push({ id: uid(), authorId: u.id, email: u.email, name: u.nickname || u.name,
+                    coach: u.role === 'coach', rating: rating, text: String(text || '').trim(), ts: Date.now() });
+      }
+      save();
+      return Promise.resolve();
+    },
+
+    deleteReview: function (courseId, reviewId) {
+      var u = sessionUser();
+      if (!u) return Promise.reject(new Error('로그인이 필요합니다'));
+      var list = db.reviews[courseId] || [];
+      db.reviews[courseId] = list.filter(function (r) {
+        // 코치는 특정 id 삭제, 일반 회원은 본인 것만
+        if (reviewId && u.role === 'coach') return r.id !== reviewId;
+        return r.email !== u.email;
       });
       save();
       return Promise.resolve();
@@ -296,7 +435,7 @@ var LocalAPI = (function () {
         cat: cat,
         title: title,
         body: body,
-        name: u.name,
+        name: u.nickname || u.name,
         authorId: u.id,
         coach: u.role === 'coach',
         ts: Date.now(),
@@ -313,7 +452,7 @@ var LocalAPI = (function () {
         if (db.posts[i].id === postId) {
           db.posts[i].comments.push({
             id: uid(),
-            name: u.name,
+            name: u.nickname || u.name,
             coach: u.role === 'coach',
             text: text,
             ts: Date.now()
@@ -328,7 +467,7 @@ var LocalAPI = (function () {
     /* 관리자 */
     members: function () {
       return Promise.resolve(users().map(function (u) {
-        return { id: u.id, name: u.name, email: u.email, role: u.role, joined: u.joined };
+        return { id: u.id, name: u.name, nickname: u.nickname || u.name, email: u.email, role: u.role, joined: u.joined };
       }));
     },
 

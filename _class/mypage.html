@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>마이페이지 — 벌크농부 클래스</title>
+<title>마이페이지 · 벌크농부 클래스</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=250811a">
 </head>
 <body>
 
@@ -25,12 +25,12 @@
 <footer id="siteFooter"></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js"></script>
-<script src="js/data.js"></script>
-<script src="js/core.js"></script>
-<script src="js/adapter-local.js"></script>
-<script src="js/adapter-supabase.js"></script>
-<script src="js/api.js"></script>
+<script src="js/config.js?v=250811a"></script>
+<script src="js/data.js?v=250811a"></script>
+<script src="js/core.js?v=250811a"></script>
+<script src="js/adapter-local.js?v=250811a"></script>
+<script src="js/adapter-supabase.js?v=250811a"></script>
+<script src="js/api.js?v=250811a"></script>
 <script>
 'use strict';
 (function () {
@@ -63,7 +63,7 @@
   });
 
   function isMine(p, me) {
-    return p.authorId ? p.authorId === me.id : p.name === me.name;
+    return p.authorId ? p.authorId === me.id : p.name === (me.nickname || me.name);
   }
 
   function render(me, myCourses, progressList, posts) {
@@ -105,10 +105,12 @@
 
     page.innerHTML =
       '<div class="profile-card">' +
-        '<div class="profile-avatar">' + esc(me.name.charAt(0)) + '</div>' +
+        '<div class="profile-avatar">' + esc((me.nickname || me.name).charAt(0)) + '</div>' +
         '<div class="profile-info">' +
-          '<h1>' + esc(me.name) + (me.role === 'coach' ? ' <b class="coach-tag">코치</b>' : '') + '</h1>' +
+          '<h1>' + esc(me.nickname || me.name) + (me.role === 'coach' ? ' <b class="coach-tag">코치</b>' : '') + '</h1>' +
           '<p>' + esc(me.email) + (me.joined ? ' · 가입일 ' + new Date(me.joined).toLocaleDateString('ko-KR') : '') + '</p>' +
+          '<p>🪪 ' + esc(me.name) + ' <span style="color:var(--dim);font-size:12px">(실명 · 나만 보임)</span></p>' +
+          (me.phone ? '<p>📱 ' + esc(me.phone) + '</p>' : '') +
         '</div>' +
         (me.role === 'coach' ? '<a class="btn btn-dark btn-sm" href="admin.html">관리자 페이지</a>' : '') +
       '</div>' +
@@ -126,32 +128,68 @@
       '<div class="admin-block">' +
         '<h2>계정 설정</h2>' +
         '<div class="setting-row">' +
-          '<div class="field" style="flex:1;margin:0"><label for="newName">이름(닉네임) 변경</label>' +
+          '<div class="field" style="flex:1;margin:0"><label for="newNick">닉네임 변경 (공개 표시)</label>' +
+          '<input id="newNick" type="text" maxlength="20" value="' + esc(me.nickname || me.name) + '"></div>' +
+          '<button class="btn btn-ghost btn-sm" id="nickBtn" type="button">변경</button>' +
+        '</div>' +
+        '<div class="setting-row">' +
+          '<div class="field" style="flex:1;margin:0"><label for="newName">이름(실명) 변경</label>' +
           '<input id="newName" type="text" maxlength="20" value="' + esc(me.name) + '"></div>' +
           '<button class="btn btn-ghost btn-sm" id="nameBtn" type="button">변경</button>' +
         '</div>' +
         '<div class="setting-row">' +
-          '<div class="field" style="flex:1;margin:0"><label for="newPw">비밀번호 변경 (6자 이상)</label>' +
+          '<div class="field" style="flex:1;margin:0"><label for="newPhone">휴대폰 번호 변경</label>' +
+          '<input id="newPhone" type="tel" inputmode="numeric" maxlength="13" placeholder="010-1234-5678" value="' + esc(me.phone || '') + '"></div>' +
+          '<button class="btn btn-ghost btn-sm" id="phoneBtn" type="button">변경</button>' +
+        '</div>' +
+        '<div class="setting-row">' +
+          '<div class="field" style="flex:1;margin:0"><label for="newPw">비밀번호 변경 (8자+ · 대소문자·특수문자)</label>' +
           '<input id="newPw" type="password" autocomplete="new-password" placeholder="새 비밀번호"></div>' +
           '<button class="btn btn-ghost btn-sm" id="pwBtn" type="button">변경</button>' +
         '</div>' +
-        '<p class="hint">이름을 바꾸면 앞으로 쓰는 글·댓글에 새 이름이 표시됩니다.</p>' +
+        '<p class="hint">닉네임은 글·댓글·후기에 공개 표시됩니다. 실명은 본인과 코치만 볼 수 있습니다.</p>' +
+      '</div>' +
+
+      '<div class="admin-block danger-zone">' +
+        '<h2>회원 탈퇴</h2>' +
+        '<p class="desc">탈퇴하면 계정과 수강·진도·작성글이 모두 삭제되며 되돌릴 수 없습니다.</p>' +
+        '<button class="btn btn-danger btn-sm" id="deleteBtn" type="button">회원 탈퇴</button>' +
       '</div>';
 
     bind();
+    initPwToggles(page);
+    blockHangul($('#newPw'));   // 비밀번호에 한글 입력 차단
+    nameFilter($('#newName'));  // 이름: 한글·영문만
   }
 
   function bind() {
+    $('#nickBtn').addEventListener('click', function () {
+      var nickname = $('#newNick').value.trim();
+      var me = API.me();
+      if (nickname === (me.nickname || me.name)) { toast('지금 닉네임과 같습니다.'); return; }
+      var btn = $('#nickBtn');
+      btn.disabled = true;
+      API.updateNickname(nickname).then(function (r) {
+        if (!r.ok) { toast(r.msg); btn.disabled = false; return; }
+        toast('닉네임이 변경되었습니다: ' + nickname);
+        updateUserChip();
+        setTimeout(function () { location.reload(); }, 700);
+      }).catch(function (e) {
+        console.error(e);
+        toast('변경에 실패했습니다. 다시 시도해주세요.');
+        btn.disabled = false;
+      });
+    });
+
     $('#nameBtn').addEventListener('click', function () {
       var name = $('#newName').value.trim();
       var me = API.me();
-      if (name === me.name) { toast('지금 이름과 같습니다.'); return; }
+      if (name === me.name) { toast('지금 실명과 같습니다.'); return; }
       var btn = $('#nameBtn');
       btn.disabled = true;
       API.updateName(name).then(function (r) {
         if (!r.ok) { toast(r.msg); btn.disabled = false; return; }
-        toast('이름이 변경되었습니다: ' + name);
-        updateUserChip();
+        toast('실명이 변경되었습니다.');
         setTimeout(function () { location.reload(); }, 700);
       }).catch(function (e) {
         console.error(e);
@@ -172,6 +210,45 @@
       }).catch(function (e) {
         console.error(e);
         toast('변경에 실패했습니다. 다시 시도해주세요.');
+        btn.disabled = false;
+      });
+    });
+
+    $('#phoneBtn').addEventListener('click', function () {
+      var btn = $('#phoneBtn');
+      btn.disabled = true;
+      API.updatePhone($('#newPhone').value).then(function (r) {
+        if (!r.ok) { toast(r.msg); btn.disabled = false; return; }
+        $('#newPhone').value = r.phone;
+        toast('휴대폰 번호가 변경되었습니다.');
+        btn.disabled = false;
+      }).catch(function (e) {
+        console.error(e);
+        toast('변경에 실패했습니다. 다시 시도해주세요.');
+        btn.disabled = false;
+      });
+    });
+
+    // 휴대폰 자동 하이픈
+    $('#newPhone').addEventListener('input', function () {
+      var d = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+      if (d.length >= 11) this.value = d.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+      else if (d.length >= 7) this.value = d.replace(/(\d{3})(\d{3,4})/, '$1-$2');
+      else this.value = d;
+    });
+
+    $('#deleteBtn').addEventListener('click', function () {
+      if (!confirm('정말 탈퇴하시겠습니까?\n계정과 모든 데이터(수강·진도·작성글)가 삭제되며 되돌릴 수 없습니다.')) return;
+      if (!confirm('마지막 확인입니다. 탈퇴를 진행할까요?')) return;
+      var btn = $('#deleteBtn');
+      btn.disabled = true;
+      API.deleteAccount().then(function (r) {
+        if (!r.ok) { toast(r.msg); btn.disabled = false; return; }
+        alert('탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.');
+        location.href = 'index.html';
+      }).catch(function (e) {
+        console.error(e);
+        toast('탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.');
         btn.disabled = false;
       });
     });

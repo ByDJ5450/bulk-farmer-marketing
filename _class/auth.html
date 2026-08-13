@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>로그인 — 벌크농부 클래스</title>
+<title>로그인 · 벌크농부 클래스</title>
+<script>document.documentElement.classList.add('js');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=250811a">
 </head>
 <body>
 
@@ -37,34 +38,97 @@
           <label for="liPw">비밀번호</label>
           <input id="liPw" type="password" autocomplete="current-password" placeholder="비밀번호" required>
         </div>
+        <div class="turnstile-box" id="loginTurnstile"></div>
         <div class="auth-msg" id="liMsg"></div>
         <button class="btn btn-green" type="submit" id="liBtn">로그인</button>
+        <p class="auth-alt"><a href="find-id.html">이메일(아이디) 찾기</a> · <a href="reset.html">비밀번호 재설정</a></p>
       </form>
 
       <!-- 회원가입 폼 -->
       <form id="signupForm" style="display:none">
         <div class="field">
-          <label for="suName">이름 (닉네임)</label>
-          <input id="suName" type="text" maxlength="20" autocomplete="nickname" placeholder="댓글·게시글에 표시됩니다" required>
+          <label for="suName">이름 (실명)</label>
+          <input id="suName" type="text" maxlength="20" autocomplete="name" placeholder="실명 (본인·코치만 확인, 공개 안 됨)" required>
+        </div>
+        <div class="field">
+          <label for="suNick">닉네임</label>
+          <input id="suNick" type="text" maxlength="20" autocomplete="nickname" placeholder="댓글·게시글에 표시될 이름" required>
         </div>
         <div class="field">
           <label for="suEmail">이메일</label>
           <input id="suEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
         </div>
         <div class="field">
-          <label for="suPw">비밀번호 (6자 이상)</label>
-          <input id="suPw" type="password" autocomplete="new-password" placeholder="비밀번호" required>
+          <label for="suPhone">휴대폰 번호</label>
+          <input id="suPhone" type="tel" autocomplete="tel" inputmode="numeric" placeholder="010-1234-5678" maxlength="13" required>
+        </div>
+        <div class="field">
+          <label for="suPw">비밀번호</label>
+          <input id="suPw" type="password" autocomplete="new-password" placeholder="영문 대소문자·특수문자 포함 8자 이상" required>
+          <ul class="pw-reqs" id="suPwReqs" aria-live="polite">
+            <li data-req="len">8자 이상</li>
+            <li data-req="upper">영문 대문자 1개 이상</li>
+            <li data-req="lower">영문 소문자 1개 이상</li>
+            <li data-req="special">특수문자 1개 이상</li>
+          </ul>
         </div>
         <div class="field">
           <label for="suPw2">비밀번호 확인</label>
           <input id="suPw2" type="password" autocomplete="new-password" placeholder="비밀번호 다시 입력" required>
         </div>
         <div class="field" id="coachCodeField">
-          <label for="suCode">코치 코드 <span style="font-weight:400">(선택 — 운영자 전용)</span></label>
+          <label for="suCode">코치 코드 <span style="font-weight:400">(선택 · 운영자 전용)</span></label>
           <input id="suCode" type="text" autocomplete="off" placeholder="일반 회원은 비워두세요">
         </div>
+
+        <div class="consent">
+          <label class="consent-all"><input type="checkbox" id="agreeAll" aria-label="전체 동의"><b>아래 항목에 전체 동의합니다</b></label>
+          <div class="consent-list">
+            <label><input type="checkbox" id="agreeAge" class="req" aria-label="만 14세 이상입니다 (필수)"><span><em>[필수]</em> 만 14세 이상입니다</span></label>
+            <label><input type="checkbox" id="agreeTerms" class="req" aria-label="이용약관 동의 (필수)"><span><em>[필수]</em> <a href="terms.html" target="_blank" rel="noopener">이용약관</a>에 동의합니다</span></label>
+            <label><input type="checkbox" id="agreePrivacy" class="req" aria-label="개인정보 수집·이용 동의 (필수)"><span><em>[필수]</em> <a href="privacy.html" target="_blank" rel="noopener">개인정보 수집·이용</a>에 동의합니다</span></label>
+            <label><input type="checkbox" id="agreeMkt" aria-label="마케팅·이벤트 정보 수신 동의 (선택)"><span><em class="opt">[선택]</em> 마케팅·이벤트 정보 수신에 동의합니다</span></label>
+          </div>
+        </div>
+
+        <div class="turnstile-box" id="signupTurnstile"></div>
         <div class="auth-msg" id="suMsg"></div>
         <button class="btn btn-green" type="submit" id="suBtn">가입하고 시작하기</button>
+      </form>
+
+      <!-- 소셜 로그인 (로그인·가입 공통) -->
+      <div id="socialAuth">
+        <div class="social-divider"><span>또는 간편하게</span></div>
+        <button type="button" class="btn btn-social btn-google" id="googleBtn">
+          <span class="social-ico" aria-hidden="true">G</span>구글로 시작하기
+        </button>
+        <button type="button" class="btn btn-social btn-kakao" id="kakaoBtn">
+          <span class="social-ico" aria-hidden="true">K</span>카카오로 시작하기
+        </button>
+      </div>
+
+      <!-- 소셜 최초 로그인 후 프로필 완성 -->
+      <form id="completeForm" style="display:none">
+        <p class="sub">거의 다 됐습니다! 아래만 채우면 시작합니다.</p>
+        <div class="field">
+          <label for="cpNick">닉네임</label>
+          <input id="cpNick" type="text" maxlength="20" autocomplete="nickname" placeholder="댓글·게시글에 표시될 이름" required>
+        </div>
+        <div class="field">
+          <label for="cpPhone">휴대폰 번호</label>
+          <input id="cpPhone" type="tel" autocomplete="tel" inputmode="numeric" placeholder="010-1234-5678" maxlength="13" required>
+        </div>
+        <div class="consent">
+          <label class="consent-all"><input type="checkbox" id="cpAgreeAll" aria-label="전체 동의"><b>아래 항목에 전체 동의합니다</b></label>
+          <div class="consent-list" id="cpConsentList">
+            <label><input type="checkbox" class="req" id="cpAge" aria-label="만 14세 이상입니다 (필수)"><span><em>[필수]</em> 만 14세 이상입니다</span></label>
+            <label><input type="checkbox" class="req" id="cpTerms" aria-label="이용약관 동의 (필수)"><span><em>[필수]</em> <a href="terms.html" target="_blank" rel="noopener">이용약관</a>에 동의합니다</span></label>
+            <label><input type="checkbox" class="req" id="cpPrivacy" aria-label="개인정보 수집·이용 동의 (필수)"><span><em>[필수]</em> <a href="privacy.html" target="_blank" rel="noopener">개인정보 수집·이용</a>에 동의합니다</span></label>
+            <label><input type="checkbox" id="cpMkt" aria-label="마케팅 정보 수신 동의 (선택)"><span><em class="opt">[선택]</em> 마케팅·이벤트 정보 수신에 동의합니다</span></label>
+          </div>
+        </div>
+        <div class="auth-msg" id="cpMsg"></div>
+        <button class="btn btn-green" type="submit" id="cpBtn">시작하기</button>
       </form>
 
       <p class="mode-note" id="modeNote"></p>
@@ -75,56 +139,136 @@
 <footer id="siteFooter"></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js"></script>
-<script src="js/data.js"></script>
-<script src="js/core.js"></script>
-<script src="js/adapter-local.js"></script>
-<script src="js/adapter-supabase.js"></script>
-<script src="js/api.js"></script>
+<script src="js/config.js?v=250811a"></script>
+<script src="js/data.js?v=250811a"></script>
+<script src="js/core.js?v=250811a"></script>
+<script src="js/adapter-local.js?v=250811a"></script>
+<script src="js/adapter-supabase.js?v=250811a"></script>
+<script src="js/api.js?v=250811a"></script>
 <script>
 'use strict';
 (function () {
   var next = qsParam('next') || 'index.html';
-  // 외부 주소로의 이동 방지
   if (/^(https?:)?\/\//.test(next)) next = 'index.html';
 
   API.init().then(function () {
     renderHeader('');
     renderFooter();
-    if (API.me()) { location.href = next; return; }
+    var me = API.me();
+    if (me) {
+      // 소셜 최초 로그인 → 프로필(닉네임·전화·동의) 완성 단계
+      if (me.needsProfile) { showComplete(me); return; }
+      location.href = next; return;
+    }
 
     if (API.mode === 'supabase') {
-      $('#coachCodeField').style.display = 'none'; // 서버 모드의 코치 지정은 README 참조
-      $('#modeNote').textContent = '서버 모드로 동작 중 — 계정과 데이터가 서버에 안전하게 저장됩니다.';
+      $('#coachCodeField').style.display = 'none';
+      $('#modeNote').textContent = '서버 모드입니다. 계정과 데이터가 서버에 안전하게 저장됩니다.';
     } else {
-      $('#modeNote').textContent = '지금은 로컬 모드입니다 — 계정과 데이터가 이 브라우저에만 저장됩니다. 실제 서비스 전환은 README의 Supabase 설정을 참조하세요.';
+      // 로컬 모드에선 소셜 로그인 불가 — 버튼 숨김
+      $('#socialAuth').style.display = 'none';
+      $('#modeNote').textContent = '지금은 로컬 모드입니다. 계정과 데이터가 이 브라우저에만 저장됩니다.';
     }
   });
-
-  /* 탭 전환 */
-  function showTab(which) {
-    var login = which === 'login';
-    $('#tabLogin').classList.toggle('active', login);
-    $('#tabSignup').classList.toggle('active', !login);
-    $('#loginForm').style.display = login ? '' : 'none';
-    $('#signupForm').style.display = login ? 'none' : '';
-  }
-  $('#tabLogin').addEventListener('click', function () { showTab('login'); });
-  $('#tabSignup').addEventListener('click', function () { showTab('signup'); });
-  if (qsParam('mode') === 'signup') showTab('signup');
 
   function setMsg(el, text, ok) {
     el.textContent = text || '';
     el.className = 'auth-msg ' + (ok ? 'ok' : 'err');
   }
 
-  /* 로그인 */
+  /* ---------- Cloudflare Turnstile (봇 차단, 서버 검증) ---------- */
+  var TURNSTILE = (window.BULK_CONFIG && window.BULK_CONFIG.TURNSTILE_SITE_KEY || '').trim();
+  var tsLoginToken = '', tsSignupToken = '', tsLoginId = null, tsSignupId = null;
+  var tsLoadFailed = false, tsSignupRendered = false;
+  var TS_ERR = '보안 확인 위젯을 불러오지 못했습니다. 광고 차단(AdBlock)을 끄고 새로고침해주세요.';
+
+  function tsFail() {
+    tsLoadFailed = true;
+    var html = '<div style="font-size:13px;color:#E03030;font-weight:700;line-height:1.55">' + TS_ERR + '</div>';
+    $('#loginTurnstile').innerHTML = html;
+    $('#signupTurnstile').innerHTML = html;
+  }
+  function renderLogin() {
+    tsLoginId = window.turnstile.render('#loginTurnstile', {
+      sitekey: TURNSTILE, theme: 'light', action: 'login',
+      callback: function (t) { tsLoginToken = t; },
+      'expired-callback': function () { tsLoginToken = ''; },
+      'error-callback': function () { tsLoginToken = ''; }
+    });
+  }
+  function renderSignup() {
+    if (tsSignupRendered || tsLoadFailed || !window.turnstile) return;
+    tsSignupRendered = true;
+    tsSignupId = window.turnstile.render('#signupTurnstile', {
+      sitekey: TURNSTILE, theme: 'light', action: 'signup',
+      callback: function (t) { tsSignupToken = t; },
+      'expired-callback': function () { tsSignupToken = ''; },
+      'error-callback': function () { tsSignupToken = ''; }
+    });
+  }
+  function tsReset(id) { if (!tsLoadFailed && window.turnstile && id !== null) { try { window.turnstile.reset(id); } catch (e) {} } }
+
+  if (TURNSTILE) {
+    var s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    s.async = true; s.defer = true;
+    s.onerror = tsFail;
+    s.onload = function () {
+      if (!window.turnstile) { tsFail(); return; }
+      try {
+        renderLogin();
+        // 회원가입 탭이 열려 있으면 즉시, 아니면 탭 열 때 지연 렌더
+        if ($('#signupForm').style.display !== 'none') renderSignup();
+      } catch (e) { tsFail(); }
+    };
+    document.head.appendChild(s);
+    setTimeout(function () { if (!window.turnstile && !tsLoadFailed) tsFail(); }, 10000);
+  }
+
+  /* ---------- 탭 전환 ---------- */
+  function showTab(which) {
+    var login = which === 'login';
+    $('#tabLogin').classList.toggle('active', login);
+    $('#tabSignup').classList.toggle('active', !login);
+    $('#loginForm').style.display = login ? '' : 'none';
+    $('#signupForm').style.display = login ? 'none' : '';
+    if (!login) renderSignup();   // 숨은 폼에서 렌더 실패 방지 — 보일 때 렌더
+  }
+  $('#tabLogin').addEventListener('click', function () { showTab('login'); });
+  $('#tabSignup').addEventListener('click', function () { showTab('signup'); });
+  if (qsParam('mode') === 'signup') showTab('signup');
+
+  /* ---------- 동의 체크박스 ---------- */
+  var reqBoxes = function () { return [].slice.call(document.querySelectorAll('.consent-list input.req')); };
+  var allBoxes = function () { return [].slice.call(document.querySelectorAll('.consent-list input[type=checkbox]')); };
+  $('#agreeAll').addEventListener('change', function () {
+    var on = this.checked;
+    allBoxes().forEach(function (b) { b.checked = on; });
+  });
+  document.querySelector('.consent-list').addEventListener('change', function () {
+    $('#agreeAll').checked = allBoxes().every(function (b) { return b.checked; });
+  });
+
+  /* ---------- 휴대폰 자동 하이픈 ---------- */
+  $('#suPhone').addEventListener('input', function () {
+    var d = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+    if (d.length >= 11) this.value = d.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+    else if (d.length >= 7) this.value = d.replace(/(\d{3})(\d{3,4})/, '$1-$2');
+    else this.value = d;
+  });
+
+  /* ---------- 로그인 ---------- */
   $('#loginForm').addEventListener('submit', function (e) {
     e.preventDefault();
+    if (TURNSTILE) {
+      if (tsLoadFailed) { setMsg($('#liMsg'), TS_ERR); return; }
+      if (!tsLoginToken) { setMsg($('#liMsg'), '"로봇이 아닙니다" 확인을 완료해주세요. (잠시 뒤 자동 완료됩니다)'); return; }
+    }
     var btn = $('#liBtn');
     btn.disabled = true;
     setMsg($('#liMsg'), '');
-    API.login($('#liEmail').value, $('#liPw').value).then(function (r) {
+    API.login($('#liEmail').value, $('#liPw').value, tsLoginToken).then(function (r) {
+      tsLoginToken = ''; tsReset(tsLoginId);
       if (!r.ok) {
         setMsg($('#liMsg'), r.msg);
         btn.disabled = false;
@@ -134,44 +278,142 @@
       toast('환영합니다!');
       setTimeout(function () { location.href = next; }, 500);
     }).catch(function (err) {
+      tsLoginToken = ''; tsReset(tsLoginId);
       console.error(err);
       setMsg($('#liMsg'), '로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       btn.disabled = false;
     });
   });
 
-  /* 회원가입 */
+  /* ---------- 회원가입 ---------- */
   $('#signupForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    var btn = $('#suBtn');
+    var nErr = nameError($('#suName').value);
+    if (nErr) { setMsg($('#suMsg'), nErr); return; }
     var pw = $('#suPw').value;
+    var pErr = pwError(pw);
+    if (pErr) { setMsg($('#suMsg'), pErr); return; }
     if (pw !== $('#suPw2').value) {
       setMsg($('#suMsg'), '비밀번호 확인이 일치하지 않습니다.');
       return;
     }
+    var phone = $('#suPhone').value.replace(/[^0-9]/g, '');
+    if (!/^01[016789][0-9]{7,8}$/.test(phone)) {
+      setMsg($('#suMsg'), '휴대폰 번호를 정확히 입력해주세요. (예: 010-1234-5678)');
+      return;
+    }
+    if (!reqBoxes().every(function (b) { return b.checked; })) {
+      setMsg($('#suMsg'), '필수 동의 항목(만 14세 이상·이용약관·개인정보)에 모두 체크해주세요.');
+      return;
+    }
+    if (TURNSTILE) {
+      if (tsLoadFailed) { setMsg($('#suMsg'), TS_ERR); return; }
+      if (!tsSignupToken) { setMsg($('#suMsg'), '"로봇이 아닙니다" 확인을 완료해주세요. (잠시 뒤 자동 완료됩니다)'); return; }
+    }
+    var consent = {
+      marketing: $('#agreeMkt').checked,
+      phone: phone.replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3'),
+      captchaToken: tsSignupToken
+    };
+    var btn = $('#suBtn');
     btn.disabled = true;
     setMsg($('#suMsg'), '');
-    API.signup($('#suName').value, $('#suEmail').value, pw, $('#suCode').value).then(function (r) {
+    API.signup($('#suName').value, $('#suNick').value, $('#suEmail').value, pw, $('#suCode').value, consent).then(function (r) {
+      tsSignupToken = ''; tsReset(tsSignupId);
       if (!r.ok) {
         setMsg($('#suMsg'), r.msg);
         btn.disabled = false;
         return;
       }
       if (r.needConfirm) {
-        setMsg($('#suMsg'), '가입 완료! 메일함에서 인증 링크를 누른 뒤 로그인해주세요.', true);
+        setMsg($('#suMsg'), '');
         btn.disabled = false;
+        $('#signupForm').reset();
         showTab('login');
+        showModal({
+          icon: '📧',
+          title: '회원가입이 완료됐습니다',
+          body: '입력하신 이메일로 인증 링크를 보냈습니다.\n메일함(스팸함 포함)에서 링크를 눌러 인증을 마친 뒤 로그인해주세요.',
+          btnText: '로그인하러 가기'
+        });
         return;
       }
       updateUserChip();
       toast('가입 완료! 환영합니다 🎉');
       setTimeout(function () { location.href = next; }, 600);
     }).catch(function (err) {
+      tsSignupToken = ''; tsReset(tsSignupId);
       console.error(err);
       setMsg($('#suMsg'), '가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       btn.disabled = false;
     });
   });
+
+  /* ---------- 소셜 로그인 ---------- */
+  function startOAuth(provider, btn) {
+    if (API.mode !== 'supabase') { showModal({ title: '안내', body: '소셜 로그인은 서버 모드에서만 가능합니다.' }); return; }
+    btn.disabled = true;
+    API.oauthLogin(provider).then(function (r) {
+      // 성공 시 이 코드에 닿기 전에 provider 페이지로 이동한다. 여기 오면 대개 실패다.
+      if (r && !r.ok) { showModal({ title: '로그인 실패', body: r.msg || '소셜 로그인을 시작하지 못했습니다.' }); btn.disabled = false; }
+    }).catch(function (err) {
+      console.error(err);
+      showModal({ title: '로그인 실패', body: '소셜 로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' });
+      btn.disabled = false;
+    });
+  }
+  $('#googleBtn').addEventListener('click', function () { startOAuth('google', this); });
+  $('#kakaoBtn').addEventListener('click', function () { startOAuth('kakao', this); });
+
+  /* ---------- 소셜 최초 로그인 → 프로필 완성 ---------- */
+  function showComplete(me) {
+    $('.auth-tabs').style.display = 'none';
+    $('#loginForm').style.display = 'none';
+    $('#signupForm').style.display = 'none';
+    $('#socialAuth').style.display = 'none';
+    $('#completeForm').style.display = '';
+    $('.auth-card h1').textContent = '프로필 완성';
+    $('.auth-card .sub').style.display = 'none';
+    if (me && me.nickname) $('#cpNick').value = me.nickname;   // provider 이름 프리필
+  }
+  // 완성 폼 전체동의 연동
+  var cpReq = function () { return [].slice.call(document.querySelectorAll('#cpConsentList input.req')); };
+  var cpAllBoxes = function () { return [].slice.call(document.querySelectorAll('#cpConsentList input[type=checkbox]')); };
+  $('#cpAgreeAll').addEventListener('change', function () { var on = this.checked; cpAllBoxes().forEach(function (b) { b.checked = on; }); });
+  $('#cpConsentList').addEventListener('change', function () { $('#cpAgreeAll').checked = cpAllBoxes().every(function (b) { return b.checked; }); });
+  // 완성 폼 휴대폰 자동 하이픈
+  $('#cpPhone').addEventListener('input', function () {
+    var d = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+    if (d.length >= 11) this.value = d.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+    else if (d.length >= 7) this.value = d.replace(/(\d{3})(\d{3,4})/, '$1-$2');
+    else this.value = d;
+  });
+  $('#completeForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!cpReq().every(function (b) { return b.checked; })) {
+      setMsg($('#cpMsg'), '필수 동의 항목(만 14세 이상·이용약관·개인정보)에 모두 체크해주세요.'); return;
+    }
+    var btn = $('#cpBtn'); btn.disabled = true; setMsg($('#cpMsg'), '');
+    API.completeSocialProfile({
+      nickname: $('#cpNick').value,
+      phone: $('#cpPhone').value,
+      marketing: $('#cpMkt').checked
+    }).then(function (r) {
+      if (!r.ok) { setMsg($('#cpMsg'), r.msg); btn.disabled = false; return; }
+      updateUserChip();
+      toast('환영합니다 🎉');
+      setTimeout(function () { location.href = next; }, 600);
+    }).catch(function (err) {
+      console.error(err);
+      setMsg($('#cpMsg'), '저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      btn.disabled = false;
+    });
+  });
+
+  initPwToggles();   // 비밀번호 보기 토글
+  blockHangul($('#suPw')); blockHangul($('#suPw2')); blockHangul($('#liPw'));  // 비밀번호에 한글 입력 차단
+  nameFilter($('#suName'));   // 이름: 한글·영문만
+  bindPwReqs($('#suPw'), $('#suPwReqs'));   // 비밀번호 조건 실시간 표시
 })();
 </script>
 </body>

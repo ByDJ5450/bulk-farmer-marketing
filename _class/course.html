@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>강의 상세 — 벌크농부 클래스</title>
+<title>강의 상세 · 벌크농부 클래스</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
 <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=250811a">
 </head>
 <body>
 
@@ -21,12 +21,12 @@
 <footer id="siteFooter"></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js"></script>
-<script src="js/data.js"></script>
-<script src="js/core.js"></script>
-<script src="js/adapter-local.js"></script>
-<script src="js/adapter-supabase.js"></script>
-<script src="js/api.js"></script>
+<script src="js/config.js?v=250811a"></script>
+<script src="js/data.js?v=250811a"></script>
+<script src="js/core.js?v=250811a"></script>
+<script src="js/adapter-local.js?v=250811a"></script>
+<script src="js/adapter-supabase.js?v=250811a"></script>
+<script src="js/api.js?v=250811a"></script>
 <script>
 'use strict';
 (function () {
@@ -34,6 +34,8 @@
   var course = null;
   var enrolled = false;
   var pct = 0;
+  var reviews = [];      // 이 강의의 후기 목록
+  var myRev = null;      // 내가 남긴 후기 (없으면 null)
 
   API.init().then(function () {
     renderHeader('courses');
@@ -45,15 +47,20 @@
       if (courses[i].id === id) { course = courses[i]; break; }
     }
     if (!course) return null;
-    if (!API.me()) return null;
-    return API.myEnrollments().then(function (enr) {
-      enrolled = enr.indexOf(course.id) >= 0;
-      if (!enrolled) return null;
-      return API.myProgress(course.id).then(function (done) {
-        var total = lectureCount(course);
-        pct = total ? Math.round(done.length / total * 100) : 0;
-      });
-    });
+    // 후기는 비회원도 볼 수 있으므로 항상 로드
+    var tasks = [ API.courseReviews(course.id).then(function (list) { reviews = list || []; }).catch(function () { reviews = []; }) ];
+    if (API.me()) {
+      tasks.push(API.myEnrollments().then(function (enr) {
+        enrolled = enr.indexOf(course.id) >= 0;
+        if (!enrolled) return null;
+        return API.myProgress(course.id).then(function (done) {
+          var total = lectureCount(course);
+          pct = total ? Math.round(done.length / total * 100) : 0;
+        });
+      }));
+      tasks.push(API.myReview(course.id).then(function (m) { myRev = m; }).catch(function () { myRev = null; }));
+    }
+    return Promise.all(tasks);
   }).then(render).catch(function (e) {
     console.error(e);
     page.innerHTML = '<div class="container"><div class="empty-note" style="margin-top:60px">데이터를 불러오지 못했습니다. 네트워크를 확인해주세요.</div></div>';
@@ -65,7 +72,7 @@
         '강의를 찾을 수 없습니다. <a href="index.html" style="color:var(--green-dark);font-weight:800">홈으로 돌아가기</a></div></div>';
       return;
     }
-    document.title = course.title + ' — 벌크농부 클래스';
+    document.title = course.title + ' · 벌크농부 클래스';
 
     var lectures = allLectures(course);
     var ctaHTML;
@@ -87,6 +94,14 @@
         '<div class="curr-lectures">' + lecs + '</div></div>';
     }).join('');
 
+    // 강의별 추천 대상 — 값이 없으면 브랜드 공통 기본값
+    var recommendFor = (course.recommendedFor && course.recommendedFor.length) ? course.recommendedFor : [
+      '남들은 가만히 있어도 찌는데 나만 안 찌는 마른 체형',
+      '헬스장을 다녀도 몸무게가 늘 그대로인 분',
+      '유튜브 정보는 많은데 뭘 믿고 따라야 할지 모르겠는 분',
+      '방법이 아니라 원리를 알고, 스스로 설계하고 싶은 분'
+    ];
+
     page.innerHTML =
       '<section class="course-hero"><div class="container">' +
         '<span class="badge">' + esc(course.badge) + '</span>' +
@@ -103,7 +118,12 @@
           '<section><h2>이 강의로 얻는 것</h2><ul class="outcome-list">' +
             (course.outcomes || []).map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') +
           '</ul></section>' +
+          '<section><h2>이런 분께 추천합니다</h2><ul class="recommend-list">' +
+            recommendFor.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') +
+          '</ul></section>' +
           '<section><h2>커리큘럼</h2><div class="curriculum">' + curriculumHTML + '</div></section>' +
+          '<section id="reviewSection"><h2>수강평</h2><div id="reviewBody"></div></section>' +
+          '<section><h2>자주 묻는 질문</h2>' + faqHTML() + '</section>' +
         '</div>' +
         '<aside><div class="instructor-card">' +
           '<div class="avatar">🧑‍🌾</div>' +
@@ -159,6 +179,154 @@
         showPayModal();
       });
     }
+
+    paintReviews();
+  }
+
+  /* ---------- 수강평 ---------- */
+  function reviewAggregate() {
+    var count = reviews.length;
+    var sum = 0, dist = [0, 0, 0, 0, 0]; // dist[0]=1점 … dist[4]=5점
+    reviews.forEach(function (r) { sum += r.rating; if (r.rating >= 1 && r.rating <= 5) dist[r.rating - 1]++; });
+    return { count: count, avg: count ? sum / count : 0, dist: dist };
+  }
+
+  // 별점 선택기 (작성/수정 폼)
+  function starPickerHTML(selected) {
+    var out = '<div class="star-picker" id="starPicker" role="radiogroup" aria-label="별점 선택">';
+    for (var i = 1; i <= 5; i++) {
+      out += '<button type="button" class="sp-star' + (i <= selected ? ' on' : '') +
+        '" data-v="' + i + '" role="radio" aria-checked="' + (i === selected) + '" aria-label="' + i + '점">★</button>';
+    }
+    return out + '</div>';
+  }
+
+  function writeAreaHTML() {
+    var me = API.me();
+    if (!me) {
+      return '<div class="rv-note">로그인하고 강의를 수강하면 후기를 남길 수 있습니다. ' +
+        '<a href="#" id="rvLogin">로그인</a></div>';
+    }
+    if (!enrolled && me.role !== 'coach') {
+      return '<div class="rv-note">이 강의를 수강한 뒤에 후기를 작성할 수 있습니다.</div>';
+    }
+    var sel = myRev ? myRev.rating : 0;
+    var txt = myRev ? myRev.text : '';
+    return '<div class="rv-form">' +
+      '<div class="rv-form-head">' + (myRev ? '내 후기 수정' : '수강 후기 남기기') + '</div>' +
+      starPickerHTML(sel) +
+      '<textarea id="rvText" maxlength="500" placeholder="어떤 점이 도움이 됐는지 남겨주시면 다른 분께 큰 도움이 됩니다. (선택)">' + esc(txt) + '</textarea>' +
+      '<div class="rv-form-actions">' +
+        (myRev ? '<button type="button" class="btn btn-ghost btn-sm" id="rvDelete">삭제</button>' : '') +
+        '<button type="button" class="btn btn-green btn-sm" id="rvSubmit">' + (myRev ? '수정하기' : '등록하기') + '</button>' +
+      '</div></div>';
+  }
+
+  function reviewListHTML() {
+    if (!reviews.length) {
+      return '<div class="rv-empty">아직 등록된 수강평이 없습니다. 첫 후기를 남겨보세요.</div>';
+    }
+    var me = API.me();
+    var isCoach = me && me.role === 'coach';
+    return '<div class="rv-list">' + reviews.map(function (r) {
+      var mine = me && r.authorId === me.id;
+      var canDel = mine || isCoach;
+      return '<div class="rv-item">' +
+        '<div class="rv-item-top">' + starsHTML(r.rating) +
+          '<strong>' + esc(r.name) + '</strong>' +
+          (r.coach ? '<span class="coach">코치</span>' : '') +
+          '<span class="time">' + timeAgo(r.ts) + '</span>' +
+          (canDel ? '<button type="button" class="rv-del" data-id="' + esc(r.id) + '" aria-label="삭제">×</button>' : '') +
+        '</div>' +
+        (r.text ? '<p>' + esc(r.text).replace(/\n/g, '<br>') + '</p>' : '') +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function paintReviews() {
+    var body = $('#reviewBody');
+    if (!body) return;
+    var agg = reviewAggregate();
+    var summary =
+      '<div class="rv-summary">' +
+        '<div class="rv-score"><strong>' + agg.avg.toFixed(1) + '</strong>' + starsHTML(agg.avg) +
+          '<span class="rv-count">수강평 ' + agg.count + '개</span></div>' +
+        '<div class="rv-dist">' +
+          [5, 4, 3, 2, 1].map(function (n) {
+            var c = agg.dist[n - 1];
+            var pctW = agg.count ? Math.round(c / agg.count * 100) : 0;
+            return '<div class="rv-bar"><span class="rv-bar-label">' + n + '점</span>' +
+              '<span class="rv-bar-track"><span class="rv-bar-fill" style="width:' + pctW + '%"></span></span>' +
+              '<span class="rv-bar-n">' + c + '</span></div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    body.innerHTML = summary + writeAreaHTML() + reviewListHTML();
+    wireReviewEvents();
+  }
+
+  function refreshReviews() {
+    return Promise.all([
+      API.courseReviews(course.id).then(function (list) { reviews = list || []; }),
+      API.me() ? API.myReview(course.id).then(function (m) { myRev = m; }) : Promise.resolve()
+    ]).then(paintReviews);
+  }
+
+  function wireReviewEvents() {
+    var loginLink = $('#rvLogin');
+    if (loginLink) loginLink.addEventListener('click', function (e) { e.preventDefault(); gotoLogin(); });
+
+    var picked = myRev ? myRev.rating : 0;
+    var picker = $('#starPicker');
+    if (picker) {
+      $all('.sp-star', picker).forEach(function (b) {
+        b.addEventListener('click', function () {
+          picked = parseInt(b.getAttribute('data-v'), 10);
+          $all('.sp-star', picker).forEach(function (x) {
+            var v = parseInt(x.getAttribute('data-v'), 10);
+            x.classList.toggle('on', v <= picked);
+            x.setAttribute('aria-checked', v === picked);
+          });
+        });
+      });
+    }
+
+    var submit = $('#rvSubmit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (!picked) { toast('별점을 선택해주세요.'); return; }
+        submit.disabled = true;
+        API.addReview(course.id, picked, ($('#rvText') ? $('#rvText').value : '')).then(function () {
+          toast(myRev ? '후기를 수정했습니다.' : '후기를 등록했습니다. 감사합니다!');
+          return refreshReviews();
+        }).catch(function (e) {
+          toast(e.message || '후기 등록에 실패했습니다.');
+          submit.disabled = false;
+        });
+      });
+    }
+
+    var del = $('#rvDelete');
+    if (del) {
+      del.addEventListener('click', function () {
+        if (!confirm('내 후기를 삭제할까요?')) return;
+        API.deleteReview(course.id).then(function () {
+          toast('후기를 삭제했습니다.');
+          return refreshReviews();
+        }).catch(function (e) { toast(e.message || '삭제에 실패했습니다.'); });
+      });
+    }
+
+    // 코치·본인 후기 삭제 (목록 내 × 버튼)
+    $all('.rv-del').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('이 후기를 삭제할까요?')) return;
+        API.deleteReview(course.id, btn.getAttribute('data-id')).then(function () {
+          toast('후기를 삭제했습니다.');
+          return refreshReviews();
+        }).catch(function (e) { toast(e.message || '삭제에 실패했습니다.'); });
+      });
+    });
   }
 
   function showPayModal() {
