@@ -116,3 +116,20 @@
 - 지난주 대비 변화가 없으면 "변화 없음"이라고 쓴다. 억지로 발견을 만들지 않는다.
 - 성과가 하락했으면 하락했다고 쓴다.
 - 마지막 줄에 한 줄 요약을 출력한다: "리포트 저장: {경로} / 핵심 발견: {한 줄}"
+
+---
+
+## ⚠️ 유튜브 수집은 공식 API로 한다 (2026-08-13 전환)
+
+서버 IP에서 yt-dlp 개별 영상 추출은 "봇 확인"으로 막힌다. **유튜브 수집은
+YouTube Data API를 쓴다** — 키는 `~/.config/bulkfarmer/youtube.env`의
+`$YOUTUBE_API_KEY` (값을 출력·로그에 남기지 않는다). 검증된 3단 호출:
+
+1. 채널: `https://www.googleapis.com/youtube/v3/channels?part=statistics,contentDetails&forHandle={핸들}&key=$YOUTUBE_API_KEY`
+   → `statistics.subscriberCount`, `contentDetails.relatedPlaylists.uploads` (UU… 목록 ID)
+2. 업로드 목록: `.../playlistItems?part=contentDetails&playlistId={UU…}&maxResults=50&key=…` → videoId들
+3. 상세: `.../videos?part=statistics,snippet,contentDetails&id={쉼표구분ID}&key=…`
+   → viewCount·likeCount·publishedAt·duration(PT58S 등)·한글 제목
+
+쇼츠/롱폼 구분은 duration ≤ 60초 + 제목으로 판별한다. yt-dlp는 자막·썸네일
+다운로드 등 API가 못 주는 것에만 보조로 쓰고, 막히면 그 항목은 "미확인"으로 남긴다.

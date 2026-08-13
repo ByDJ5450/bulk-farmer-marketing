@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.bulkfarmer.security-check</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>"$HOME/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_class/security_check.sh"</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>9</integer>
+    <key>Minute</key><integer>20</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/tmp/bulkfarmer-security-check.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/bulkfarmer-security-check.err.log</string>
+</dict>
+</plist>

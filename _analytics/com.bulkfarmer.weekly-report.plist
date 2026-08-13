@@ -73,9 +73,9 @@ exit $RC
   </dict>
 
   <key>StandardOutPath</key>
-  <string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_analytics/cron.log</string>
+  <string>/Users/idongjin/Library/Logs/bulkfarmer/cron.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_analytics/cron.err.log</string>
+  <string>/Users/idongjin/Library/Logs/bulkfarmer/cron.err.log</string>
 
   <key>RunAtLoad</key>
   <false/>

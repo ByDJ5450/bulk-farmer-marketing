@@ -6,6 +6,18 @@ _output/
 _render_test/
 
 _threads/pending/
-_threads/state.json
+_threads/state.json          # 실제 위치: ~/Library/Application Support/bulkfarmer/ (2026-08-07 이동)
 _threads/*.log
 _analytics/cron*.log
+
+# Local Netlify folder
+.netlify
+
+# 서버 사본 전용 (setup_server.sh가 서버에서 생성)
+CLAUDE.local.md
+_server/logs/
+
+# 도구 캐시·개인 문서
+_class/.wrangler/
+__pycache__/
+지원서_*

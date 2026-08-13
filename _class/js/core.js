@@ -97,8 +97,8 @@ function updateUserChip() {
   var u = API.me();
   if (u) {
     area.innerHTML =
-      '<span class="user-name">👤 ' + esc(u.name) +
-      (u.role === 'coach' ? ' <b class="coach-tag">코치</b>' : '') + '</span>' +
+      '<a class="user-name" href="mypage.html" title="마이페이지">👤 ' + esc(u.name) +
+      (u.role === 'coach' ? ' <b class="coach-tag">코치</b>' : '') + '</a>' +
       '<button class="user-chip" id="logoutBtn" type="button">로그아웃</button>';
     $('#logoutBtn').addEventListener('click', function () {
       API.logout().then(function () {
@@ -123,10 +123,15 @@ function renderHeader(active) {
   if (!el) return;
   var links = [
     ['index.html', 'home', '홈'],
+    ['about.html', 'about', '코치 소개'],
     ['index.html#courses', 'courses', '강의'],
-    ['community.html', 'community', '커뮤니티'],
-    ['admin.html', 'admin', '관리자']
+    ['community.html', 'community', '커뮤니티']
   ];
+  // 관리자 메뉴는 코치 계정으로 로그인했을 때만 보인다
+  var meNow = API.me();
+  if (meNow && meNow.role === 'coach') {
+    links.push(['admin.html', 'admin', '관리자']);
+  }
   var nav = links.map(function (l) {
     return '<a href="' + l[0] + '"' + (active === l[1] ? ' class="active"' : '') + '>' + l[2] + '</a>';
   }).join('');
@@ -142,6 +147,6 @@ function renderFooter() {
   if (!el) return;
   el.innerHTML = '<div class="footer-inner">' +
     '<div class="logo">벌크농부<span>클래스</span></div>' +
-    '<p>55kg 멸치에서 88kg까지 — 경험으로 가르치는 벌크업 클래스</p>' +
+    '<p>55kg에서 88kg까지 — 경험으로 가르치는 벌크업 클래스</p>' +
     '<p class="dim">1:1 코칭 문의 · 인스타그램 @bulk_farmer · K-Classic 클래식 보디빌딩 3위</p></div>';
 }

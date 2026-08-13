@@ -16,10 +16,14 @@ function makeSupaAPI(client) {
   }
 
   function loadProfile(user) {
-    return client.from('profiles').select('id,name,email,role').eq('id', user.id).maybeSingle()
+    // 이메일은 profiles 테이블에서 읽지 않는다(외부 노출 방지). 로그인 세션 user.email 을 쓴다.
+    return client.from('profiles').select('id,name,role,joined').eq('id', user.id).maybeSingle()
       .then(function (r) {
         if (r.error) throw r.error;
-        if (r.data) { profile = r.data; return profile; }
+        if (r.data) {
+          profile = { id: r.data.id, name: r.data.name, role: r.data.role, joined: r.data.joined, email: user.email };
+          return profile;
+        }
         // 프로필이 없으면(트리거 미적용 등) 가입 메타데이터로 생성
         var name = (user.user_metadata && user.user_metadata.name) || String(user.email).split('@')[0];
         return client.from('profiles')
@@ -89,6 +93,27 @@ function makeSupaAPI(client) {
       return client.auth.signOut();
     },
 
+    updateName: function (name) {
+      if (!profile) return Promise.resolve({ ok: false, msg: '로그인이 필요합니다.' });
+      name = String(name).trim();
+      if (name.length < 2) return Promise.resolve({ ok: false, msg: '이름(닉네임)은 2자 이상 입력해주세요.' });
+      return client.from('profiles').update({ name: name }).eq('id', profile.id)
+        .then(function (r) {
+          if (r.error) return { ok: false, msg: '변경에 실패했습니다: ' + r.error.message };
+          profile.name = name;
+          return { ok: true };
+        });
+    },
+
+    updatePassword: function (pw) {
+      if (!profile) return Promise.resolve({ ok: false, msg: '로그인이 필요합니다.' });
+      if (String(pw).length < 6) return Promise.resolve({ ok: false, msg: '비밀번호는 6자 이상이어야 합니다.' });
+      return client.auth.updateUser({ password: pw }).then(function (r) {
+        if (r.error) return { ok: false, msg: koAuthMsg(r.error.message) };
+        return { ok: true };
+      });
+    },
+
     /* 강의 — courses 테이블에 강의 전체를 jsonb 로 저장 */
     courses: function () {
       return client.from('courses').select('id,data,created_at').order('created_at', { ascending: true })
@@ -126,6 +151,33 @@ function makeSupaAPI(client) {
       if (!profile) return Promise.reject(new Error('로그인이 필요합니다'));
       return client.from('enrollments')
         .upsert({ user_id: profile.id, course_id: courseId }, { onConflict: 'user_id,course_id' })
+        .then(function (r) {
+          if (r.error) {
+            // RLS로 막히면(유료 강의 자가수강) 안내 메시지로 변환
+            if (/row-level security|permission|policy/i.test(r.error.message || '')) {
+              throw new Error('이 강의는 결제 또는 코치 승인 후 수강할 수 있습니다.');
+            }
+            throw r.error;
+          }
+        });
+    },
+
+    /* 코치용 — 회원별 수강 권한 부여/회수 */
+    allEnrollments: function () {
+      return client.from('enrollments').select('user_id,course_id')
+        .then(function (r) {
+          if (r.error) throw r.error;
+          return r.data || [];
+        });
+    },
+    grantEnrollment: function (userId, courseId) {
+      return client.from('enrollments')
+        .upsert({ user_id: userId, course_id: courseId }, { onConflict: 'user_id,course_id' })
+        .then(function (r) { if (r.error) throw r.error; });
+    },
+    revokeEnrollment: function (userId, courseId) {
+      return client.from('enrollments').delete()
+        .eq('user_id', userId).eq('course_id', courseId)
         .then(function (r) { if (r.error) throw r.error; });
     },
 
@@ -177,7 +229,7 @@ function makeSupaAPI(client) {
     /* 커뮤니티 */
     posts: function () {
       return client.from('posts')
-        .select('id,cat,title,body,created_at,author:profiles(name,role),comments:post_comments(id,text,created_at,author:profiles(name,role))')
+        .select('id,cat,title,body,created_at,author_id,author:profiles(name,role),comments:post_comments(id,text,created_at,author:profiles(name,role))')
         .order('created_at', { ascending: false })
         .then(function (r) {
           if (r.error) throw r.error;
@@ -189,7 +241,7 @@ function makeSupaAPI(client) {
             }).sort(function (x, y) { return x.ts - y.ts; });
             return {
               id: row.id, cat: row.cat, title: row.title, body: row.body,
-              name: a.name, coach: a.coach, ts: Date.parse(row.created_at),
+              name: a.name, authorId: row.author_id, coach: a.coach, ts: Date.parse(row.created_at),
               comments: comments
             };
           });
@@ -208,15 +260,23 @@ function makeSupaAPI(client) {
         .then(function (r) { if (r.error) throw r.error; });
     },
 
-    /* 관리자 */
+    /* 관리자 — 이메일은 코치만 볼 수 있게 서버 함수(get_members)로 조회.
+       함수가 아직 없으면(구버전 스키마) 이메일 없는 목록으로 폴백. */
     members: function () {
-      return client.from('profiles').select('name,email,role,joined').order('joined', { ascending: false })
-        .then(function (r) {
-          if (r.error) throw r.error;
-          return (r.data || []).map(function (row) {
-            return { name: row.name, email: row.email, role: row.role, joined: Date.parse(row.joined) };
+      return client.rpc('get_members').then(function (r) {
+        if (!r.error && Array.isArray(r.data)) {
+          return r.data.map(function (row) {
+            return { id: row.id, name: row.name, email: row.email, role: row.role, joined: Date.parse(row.joined) };
           });
-        });
+        }
+        return client.from('profiles').select('id,name,role,joined').order('joined', { ascending: false })
+          .then(function (r2) {
+            if (r2.error) throw r2.error;
+            return (r2.data || []).map(function (row) {
+              return { id: row.id, name: row.name, email: '(코치 전용)', role: row.role, joined: Date.parse(row.joined) };
+            });
+          });
+      });
     }
   };
 }

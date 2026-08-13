@@ -13,7 +13,7 @@
        발행 간격(100분)은 이 주기와 무관하게 워커 안에서 따로 지킨다. -->
   <key>StartInterval</key><integer>60</integer>
   <key>RunAtLoad</key><true/>
-  <key>StandardOutPath</key><string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_threads/worker.log</string>
-  <key>StandardErrorPath</key><string>/Users/idongjin/Desktop/벌크농부/00_벌크농부 마케팅 에이전트팀/_threads/worker.err.log</string>
+  <key>StandardOutPath</key><string>/Users/idongjin/Library/Logs/bulkfarmer/worker.log</string>
+  <key>StandardErrorPath</key><string>/Users/idongjin/Library/Logs/bulkfarmer/worker.err.log</string>
 </dict>
 </plist>

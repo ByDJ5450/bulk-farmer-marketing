@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>벌크업 다마고치 프로젝트 모집 공고</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #888; padding: 40px 40px 0; }
+
+  .slide {
+    width: 1080px; height: 1350px;
+    position: relative; overflow: hidden;
+    margin-bottom: 40px;
+    font-family: 'Noto Sans KR', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .green { background: #5B9B75; }
+  .pink  { background: #F2B5A0; }
+
+  /* 상단 레이블 */
+  .label { position: absolute; top: 78px; left: 72px;
+           font-size: 24px; font-weight: 700; letter-spacing: 3px; }
+  .green .label { color: rgba(255,255,255,.72); }
+  .pink  .label { color: rgba(26,26,26,.55); }
+
+  /* 헤드라인 */
+  .h1 { position: absolute; left: 72px; right: 72px; top: 200px;
+        font-size: 86px; font-weight: 900; line-height: 1.24; }
+  .h2 { position: absolute; left: 72px; right: 72px; top: 190px;
+        font-size: 64px; font-weight: 900; line-height: 1.3; }
+  .green .h1, .green .h2 { color: #FFFFFF; }
+  .pink  .h1, .pink  .h2 { color: #1A1A1A; }
+  .h1 em, .h2 em { font-style: normal; color: #E03030; }
+  .green .h1 em, .green .h2 em { color: #F2B5A0; }
+
+  /* 본문 */
+  .body { position: absolute; left: 72px; right: 72px;
+          font-size: 40px; font-weight: 700; line-height: 1.62; }
+  .green .body { color: rgba(255,255,255,.94); }
+  .pink  .body { color: #1A1A1A; }
+  .cap  { position: absolute; left: 72px; right: 72px;
+          font-size: 30px; font-weight: 400; line-height: 1.6; }
+  .green .cap { color: rgba(255,255,255,.78); }
+  .pink  .cap { color: rgba(26,26,26,.68); }
+
+  /* 큰 숫자 */
+  .big { position: absolute; left: 72px; right: 72px;
+         font-size: 104px; font-weight: 900; line-height: 1.1; }
+  .green .big { color: #FFFFFF; }
+  .pink  .big { color: #1A1A1A; }
+  .big span { color: #E03030; }
+  .green .big span { color: #F2B5A0; }
+
+  /* 번호 목록 */
+  .list { position: absolute; left: 72px; right: 72px; }
+  .item { display: flex; align-items: flex-start; margin-bottom: 52px; }
+  .num  { flex: 0 0 78px; font-size: 42px; font-weight: 900; line-height: 1.3; }
+  .green .num { color: #F2B5A0; }
+  .pink  .num { color: #E03030; }
+  .txt  { font-size: 42px; font-weight: 700; line-height: 1.4; }
+  .green .txt { color: #FFFFFF; }
+  .pink  .txt { color: #1A1A1A; }
+  .sub  { display: block; font-size: 30px; font-weight: 400; margin-top: 12px; }
+  .green .sub { color: rgba(255,255,255,.74); }
+  .pink  .sub { color: rgba(26,26,26,.62); }
+
+  /* 하단 박스 */
+  .box { position: absolute; left: 72px; right: 72px; bottom: 86px;
+         border-radius: 16px; padding: 40px 46px;
+         font-size: 38px; font-weight: 700; line-height: 1.5; text-align: center; }
+  .green .box { background: #F2B5A0; color: #1A1A1A; }
+  .pink  .box { background: #1A1A1A; color: #FFFFFF; }
+
+  /* 인용 */
+  .quote { position: absolute; left: 72px; right: 72px; top: 470px;
+           font-size: 62px; font-weight: 900; line-height: 1.42; color: #1A1A1A; }
+  .quote::before { content: '"'; }
+  .quote::after  { content: '"'; }
+
+  /* 사진 — 상단 밴드. 인물이 가운데 있지 않은 컷이 많아 위쪽 기준으로 자른다 */
+  .photo { position: absolute; top: 0; left: 0;
+           width: 1080px; height: 600px; object-fit: cover; object-position: 50% 32%; }
+  .photo-cap { position: absolute; top: 612px; left: 72px; right: 72px;
+               font-size: 26px; font-weight: 400; }
+  .green .photo-cap { color: rgba(255,255,255,.7); }
+  .pink  .photo-cap { color: rgba(26,26,26,.6); }
+
+  /* Before / After 두 장 — 같은 규격으로 잘라 나란히 둔다 */
+  .duo { position: absolute; top: 0; left: 0; width: 1080px; height: 620px; }
+  .duo img { position: absolute; top: 0; width: 540px; height: 620px; object-fit: cover; }
+  .duo.tall, .duo.tall img { height: 700px; }
+  .duo img.a { left: 0; }
+  .duo img.b { left: 540px; }
+  .tag { position: absolute; bottom: 20px;
+         font-size: 30px; font-weight: 900; color: #FFFFFF;
+         background: rgba(0,0,0,.74); padding: 10px 22px; border-radius: 8px; }
+  .tag.l { left: 22px; }
+  .tag.r { right: 22px; }
+
+  /* 하단 핸들 */
+  .handle { position: absolute; bottom: 40px; left: 0; right: 0; text-align: center;
+            font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+  .green .handle { color: rgba(255,255,255,.55); }
+  .pink  .handle { color: rgba(26,26,26,.45); }
+</style>
+</head>
+<body>
+
+<!-- 1 커버 -->
+<div class="slide green">
+  <div class="duo tall">
+    <img class="a" src="img/tr_before.jpg" alt="">
+    <img class="b" src="img/tr_after.jpg" alt="">
+    <div class="tag l">Before · 55kg</div>
+    <div class="tag r">After · 88kg</div>
+  </div>
+  <div class="h1" style="top:754px; font-size:58px">3년을 운동해도<br>몸이 그대로였던<br><em>사람이 있습니다</em></div>
+  <div class="box">합정 · 군자 &nbsp;|&nbsp; 3개월 1:1 코칭<br>지금 3자리 남았습니다</div>
+  <div class="handle">@bulk_farmer</div>
+</div>
+
+<!-- 2 본인 서사 -->
+<div class="slide pink">
+  <div class="label">01</div>
+  <div class="h2">체질이 아니라<br><em>방식이었습니다</em></div>
+  <div class="big" style="top:430px">55kg <span>→</span> 88kg</div>
+  <div class="body" style="top:640px">181cm에 55kg이었습니다.<br>지금은 88kg입니다.</div>
+  <div class="cap" style="top:830px">K-Classic 클래식 보디빌딩 3위</div>
+  <div class="box">무작정 운동만 했을 땐<br>계속 실패했습니다</div>
+  <div class="handle">@bulk_farmer</div>
+</div>
+
+<!-- 3 12주 구성 -->
+<div class="slide green">
+  <div class="label">02</div>
+  <div class="h2">12주 동안<br><em>이렇게 합니다</em></div>
+  <div class="list" style="top:440px">
+    <div class="item"><div class="num">1</div><div class="txt">왜 안 늘었는지부터 찾습니다
+      <span class="sub">먹는 양 · 자극의 변화 · 기록</span></div></div>
+    <div class="item"><div class="num">2</div><div class="txt">방법이 아니라 원리를 알려드립니다
+      <span class="sub">이 무게를 왜 드는지까지 설명합니다</span></div></div>
+    <div class="item"><div class="num">3</div><div class="txt">매달 같은 방식으로 측정합니다
+      <span class="sub">숫자가 뒤로 간 달도 그대로 기록합니다</span></div></div>
+  </div>
+  <div class="box">코칭이 끝나고 원점으로 돌아가면<br>3개월을 버린 겁니다</div>
+  <div class="handle">@bulk_farmer</div>
+</div>
+
+<!-- 4 후기 -->
+<div class="slide pink">
+  <img class="photo" src="img/sh_interview_crop.jpg" alt="">
+  <div class="photo-cap">성훈님 · 12주 완주 · 69.6 → 76.2kg</div>
+  <div class="quote" style="top:686px; font-size:56px">자존감이요.<br>사람을 대할 때<br>움츠러들지도 않고요.</div>
+  <div class="body" style="top:1000px">체중 얘기가 아니었습니다.</div>
+  <div class="box">12주가 끝나면<br>혼자 짜실 수 있어야 합니다</div>
+  <div class="handle">@bulk_farmer</div>
+</div>
+
+<!-- 5 정원 -->
+<div class="slide green">
+  <div class="label">04</div>
+  <div class="h2">시작일은<br><em>맞춰드립니다</em></div>
+  <div class="big" style="top:470px">지금 <span>3자리</span></div>
+  <div class="body" style="top:660px">기수를 기다리지 않습니다.<br>신청하신 날부터 12주입니다.</div>
+  <div class="cap" style="top:840px">합정 · 군자 &nbsp;|&nbsp; 3개월(12주) 1:1 코칭</div>
+  <div class="box">오늘 시작하면<br>10월 27일에 끝납니다</div>
+  <div class="handle">@bulk_farmer</div>
+</div>
+
+<!-- 6 비대상 + CTA -->
+<div class="slide pink">
+  <div class="label">05</div>
+  <div class="h2">이런 분은<br><em>신청하지 마세요</em></div>
+  <div class="list" style="top:430px">
+    <div class="item"><div class="num">·</div><div class="txt">먹는 걸 기록할 생각이 없는 분</div></div>
+    <div class="item"><div class="num">·</div><div class="txt">주 3회 운동 시간을 못 내는 분</div></div>
+    <div class="item"><div class="num">·</div><div class="txt">3개월 안에 완성되길 바라는 분</div></div>
+  </div>
+  <div class="body" style="top:800px">해당 안 되신다면</div>
+  <div class="box">지금 몸무게와 정체 기간을<br>댓글로 남겨주세요<br>어디서 막혀 있는지 답변드립니다</div>
+  <div class="handle">@bulk_farmer</div>
+</div>
+
+</body>
+</html>

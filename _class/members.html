@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회원 & 수강 권한 — 벌크농부 클래스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="siteHeader"></header>
+
+<main>
+  <div class="container" id="root">
+    <div class="empty-note" style="margin-top:60px">불러오는 중…</div>
+  </div>
+</main>
+
+<footer id="siteFooter"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/adapter-local.js"></script>
+<script src="js/adapter-supabase.js"></script>
+<script src="js/api.js"></script>
+<script>
+'use strict';
+(function () {
+  var root = $('#root');
+  var courses = [];
+
+  API.init().then(function () {
+    renderHeader('admin');
+    renderFooter();
+
+    var me = API.me();
+    if (!me) {
+      root.innerHTML = '<div class="empty-note" style="margin-top:60px">회원 관리는 코치 계정으로 로그인해야 볼 수 있습니다.<br><br>' +
+        '<button class="btn btn-green btn-sm" type="button" onclick="gotoLogin()">로그인</button></div>';
+      return null;
+    }
+    if (me.role !== 'coach') {
+      root.innerHTML = '<div class="empty-note" style="margin-top:60px">' + esc(me.name) + '님은 일반 회원 계정입니다.<br>회원 관리는 코치 계정 전용입니다.</div>';
+      return null;
+    }
+    return Promise.all([API.courses(), API.members(), API.allEnrollments()]);
+  }).then(function (r) {
+    if (!r) return;
+    courses = r[0];
+    render(r[1], r[2]);
+  }).catch(function (e) {
+    console.error(e);
+    root.innerHTML = '<div class="empty-note" style="margin-top:60px">데이터를 불러오지 못했습니다. 네트워크를 확인해주세요.</div>';
+  });
+
+  function findCourseLocal(id) {
+    for (var i = 0; i < courses.length; i++) { if (courses[i].id === id) return courses[i]; }
+    return null;
+  }
+
+  // 검색어로 필터링해서 다시 그림
+  function render(members, enrollments, keyword) {
+    var enrollMap = {};
+    (enrollments || []).forEach(function (e) {
+      if (!enrollMap[e.user_id]) enrollMap[e.user_id] = {};
+      enrollMap[e.user_id][e.course_id] = true;
+    });
+
+    var kw = (keyword || '').trim().toLowerCase();
+    var shown = members.filter(function (m) {
+      if (!kw) return true;
+      return (m.name || '').toLowerCase().indexOf(kw) >= 0 ||
+             (m.email || '').toLowerCase().indexOf(kw) >= 0;
+    });
+
+    var paidCount = courses.filter(function (c) { return Number(c.price) > 0; }).length;
+    var memberCount = members.filter(function (m) { return m.role !== 'coach'; }).length;
+
+    function accessCard(m) {
+      var mine = enrollMap[m.id] || {};
+      if (m.role === 'coach') {
+        return '<div class="member-access">' +
+          '<div class="ma-head"><strong>' + esc(m.name) + '</strong> <span class="role-pill role-coach">코치</span>' +
+          '<span class="ma-sub">' + esc(m.email || '') + '</span></div>' +
+          '<div class="ma-note">모든 강의 접근 가능</div></div>';
+      }
+      var pills = courses.length
+        ? courses.map(function (c) {
+            var on = !!mine[c.id];
+            var free = Number(c.price) === 0;
+            return '<button class="access-pill' + (on ? ' on' : '') + '" type="button" ' +
+              'data-uid="' + esc(m.id) + '" data-cid="' + esc(c.id) + '">' +
+              (on ? '✓ ' : '＋ ') + esc(c.title) + (free ? ' <i>무료</i>' : '') + '</button>';
+          }).join('')
+        : '<span class="ma-note">등록된 강의가 없습니다.</span>';
+      return '<div class="member-access">' +
+        '<div class="ma-head"><strong>' + esc(m.name) + '</strong>' +
+        '<span class="ma-sub">' + esc(m.email || '') + (m.joined ? ' · 가입 ' + new Date(m.joined).toLocaleDateString('ko-KR') : '') + '</span></div>' +
+        '<div class="ma-courses">' + pills + '</div></div>';
+    }
+
+    var listHTML = shown.length
+      ? shown.map(accessCard).join('')
+      : '<div class="empty-note">' + (kw ? '검색 결과가 없습니다.' : '아직 가입한 회원이 없습니다.') + '</div>';
+
+    root.innerHTML =
+      '<div class="admin-subnav" style="margin-top:28px">' +
+        '<a href="admin.html">강의·공지 관리</a>' +
+        '<a href="members.html" class="active">회원 & 수강 권한</a>' +
+      '</div>' +
+      '<div class="community-top" style="margin-top:6px">' +
+        '<h1 style="font-size:26px;font-weight:900">회원 & 수강 권한</h1>' +
+        '<span style="font-size:14px;color:var(--dim);font-weight:700">회원 ' + memberCount + '명</span>' +
+      '</div>' +
+      '<p style="color:var(--dim);font-size:14px;margin:6px 0 16px;line-height:1.7">' +
+        '강의 버튼을 눌러 권한을 켜고 끕니다. <b>무료 강의</b>는 회원이 스스로 신청하고, ' +
+        '<b>유료 강의</b>는 결제 확인 후 여기서 켜주세요. (초록 = 수강 가능' +
+        (paidCount ? '' : ' · 현재 유료 강의 없음') + ')</p>' +
+      '<div class="field" style="max-width:360px;margin-bottom:18px">' +
+        '<input id="memberSearch" type="text" placeholder="🔍 이름 또는 이메일 검색" value="' + esc(keyword || '') + '">' +
+      '</div>' +
+      '<div class="member-access-list">' + listHTML + '</div>';
+
+    // 검색
+    var search = $('#memberSearch');
+    search.addEventListener('input', function () {
+      render(members, enrollments, search.value);
+      // 포커스·커서 유지
+      var el = $('#memberSearch');
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
+
+    // 권한 토글
+    $('.member-access-list').addEventListener('click', function (e) {
+      var pill = e.target.closest('.access-pill');
+      if (!pill) return;
+      var uid = pill.getAttribute('data-uid');
+      var cid = pill.getAttribute('data-cid');
+      var turnOn = !pill.classList.contains('on');
+      pill.disabled = true;
+      var op = turnOn ? API.grantEnrollment(uid, cid) : API.revokeEnrollment(uid, cid);
+      op.then(function () {
+        // 로컬 상태도 갱신해 재검색 시에도 반영
+        if (!enrollMap) enrollMap = {};
+        var found = false;
+        for (var i = 0; i < enrollments.length; i++) {
+          if (enrollments[i].user_id === uid && enrollments[i].course_id === cid) {
+            if (!turnOn) enrollments.splice(i, 1);
+            found = true;
+            break;
+          }
+        }
+        if (turnOn && !found) enrollments.push({ user_id: uid, course_id: cid });
+
+        pill.classList.toggle('on', turnOn);
+        var course = findCourseLocal(cid);
+        var free = course && Number(course.price) === 0;
+        pill.innerHTML = (turnOn ? '✓ ' : '＋ ') + esc(course ? course.title : cid) + (free ? ' <i>무료</i>' : '');
+        pill.disabled = false;
+        toast(turnOn ? '수강 권한을 부여했습니다.' : '수강 권한을 회수했습니다.');
+      }).catch(function (err) {
+        console.error(err);
+        toast('변경에 실패했습니다. 다시 시도해주세요.');
+        pill.disabled = false;
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

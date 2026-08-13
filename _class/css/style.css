@@ -20,10 +20,34 @@ body {
   font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
   background: var(--bg);
   color: var(--ink);
-  line-height: 1.6;
+  line-height: 1.65;
+  letter-spacing: -0.01em;
+  /* 한글이 줄 끝에서 단어 중간에 잘리지 않게 (가독성 핵심) */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+
+/* 제목류는 줄간격을 조금 더 촘촘하게, 본문은 넉넉하게 */
+h1, h2, h3 { word-break: keep-all; }
+p, li { overflow-wrap: break-word; }
+
+/* 줄바꿈 품질 — 제목은 줄 길이를 고르게(balance), 본문은 마지막 줄에 한 단어만
+   외톨이로 떨어지지 않게(pretty). 폰에서 어색하게 끊기는 문제를 줄인다. */
+h1, h2, h3,
+.hero h1, .about-hero h1, .course-hero h1,
+.about-tagline, .course-hero .tagline, .hero .eyebrow,
+.review-highlight .rh-quote, .section-head h2, .card-body h3, .thumb strong {
+  text-wrap: balance;
+}
+p, li, .lead, .story p, .value-card p, .review-card p,
+.comment p, .post-detail .p-body, .instructor-card ul li {
+  text-wrap: pretty;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -62,7 +86,8 @@ main { flex: 1; }
 #siteHeader nav a:hover { background: var(--bg); color: var(--ink); }
 #siteHeader nav a.active { color: var(--green-dark); background: #EAF3EE; }
 .user-area { display: flex; align-items: center; gap: 8px; }
-.user-name { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.user-name { font-size: 14px; font-weight: 700; white-space: nowrap; border-radius: 8px; padding: 6px 8px; }
+.user-name:hover { background: #EAF3EE; color: var(--green-dark); }
 .coach-tag {
   background: var(--green);
   color: #fff;
@@ -500,6 +525,53 @@ main { flex: 1; }
 .admin-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 .hint { font-size: 12px; color: var(--dim); margin-top: 4px; }
 
+/* ---------- 관리자 서브탭 ---------- */
+.admin-subnav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.admin-subnav a {
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--dim);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.admin-subnav a:hover { color: var(--ink); }
+.admin-subnav a.active { color: var(--green-dark); border-bottom-color: var(--green); }
+
+/* ---------- 회원 수강 권한 (관리자) ---------- */
+.member-access-list { display: grid; gap: 12px; margin-top: 12px; }
+.member-access {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: #FCFBF8;
+}
+.ma-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ma-head strong { font-size: 15px; font-weight: 800; }
+.ma-sub { font-size: 12.5px; color: var(--dim); }
+.ma-note { font-size: 13px; color: var(--dim); margin-top: 6px; }
+.ma-courses { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.access-pill {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dim);
+  transition: all 0.12s ease;
+}
+.access-pill:hover { border-color: var(--green); }
+.access-pill.on { background: var(--green); border-color: var(--green); color: #fff; }
+.access-pill i { font-style: normal; opacity: 0.7; font-size: 11px; font-weight: 800; }
+.access-pill[disabled] { opacity: 0.5; }
+
 /* ---------- 토스트 ---------- */
 .toast {
   position: fixed;
@@ -558,6 +630,51 @@ main { flex: 1; }
   line-height: 1.6;
 }
 
+/* ---------- 마이페이지 ---------- */
+.profile-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 26px;
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.profile-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.profile-info { flex: 1; min-width: 200px; }
+.profile-info h1 { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
+.profile-info p { font-size: 14px; color: var(--dim); margin-top: 4px; }
+.count-tag { font-size: 14px; color: var(--dim); font-weight: 500; }
+.my-course-list { display: grid; gap: 12px; margin-top: 12px; }
+.my-course {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #FCFBF8;
+  flex-wrap: wrap;
+}
+.my-course .mc-info { flex: 1; min-width: 220px; }
+.my-course .mc-info strong { font-size: 16px; font-weight: 800; word-break: keep-all; }
+.my-course .mc-meta { font-size: 13px; color: var(--dim); display: block; margin-top: 6px; }
+.setting-row { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 16px; max-width: 480px; }
+
 /* ---------- 회원 목록 ---------- */
 .member-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .member-table th, .member-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
@@ -566,15 +683,195 @@ main { flex: 1; }
 .role-coach { background: var(--green); color: #fff; }
 .role-member { background: var(--bg); color: var(--dim); border: 1px solid var(--line); }
 
+/* ---------- 코치 소개 페이지 ---------- */
+.about-hero {
+  background: var(--green);
+  color: #fff;
+  padding: 60px 0 48px;
+  text-align: center;
+}
+.about-avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+}
+.about-hero h1 { font-size: 34px; font-weight: 900; letter-spacing: -1px; }
+.about-tagline { margin-top: 8px; font-size: 19px; opacity: 0.95; }
+.about-tagline em { font-style: normal; color: #FFE3D6; font-weight: 800; }
+.about-badges { margin-top: 22px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.about-badges span {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.about-section { padding: 52px 0 0; }
+.about-section > h2 { font-size: 26px; font-weight: 900; letter-spacing: -0.6px; margin-bottom: 8px; word-break: keep-all; }
+.about-section .section-sub { color: var(--dim); font-size: 15px; margin-bottom: 22px; }
+.story { max-width: 720px; }
+.story p { font-size: 16px; line-height: 1.85; margin-top: 14px; color: #333; }
+.story strong { color: var(--green-dark); font-weight: 800; }
+
+.value-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 22px; }
+.value-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+.value-card .v-num { font-size: 26px; font-weight: 900; color: var(--pink); }
+.value-card h3 { font-size: 19px; font-weight: 900; margin: 8px 0 8px; }
+.value-card p { font-size: 14px; color: var(--dim); line-height: 1.7; }
+.value-card strong { color: var(--ink); }
+
+.review-highlight {
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 36px 32px;
+  text-align: center;
+  margin-top: 8px;
+}
+.review-highlight .rh-quote { font-size: 26px; font-weight: 900; line-height: 1.5; letter-spacing: -0.5px; word-break: keep-all; }
+.review-highlight .rh-quote em { font-style: normal; color: var(--pink); }
+.review-highlight .rh-detail { margin-top: 16px; font-size: 16px; color: #ccc; line-height: 1.7; max-width: 560px; margin-left: auto; margin-right: auto; word-break: keep-all; }
+.review-highlight .rh-name { margin-top: 18px; font-size: 14px; font-weight: 700; color: var(--pink); }
+
+.review-numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
+.rn-item {
+  background: #EAF3EE;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.rn-item span { display: block; font-size: 12px; color: var(--dim); font-weight: 700; }
+.rn-item strong { display: block; font-size: 18px; font-weight: 900; color: var(--green-dark); margin-top: 4px; }
+
+.review-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 16px; }
+.review-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--green);
+  border-radius: 12px;
+  padding: 20px;
+}
+.review-card p { font-size: 15px; line-height: 1.7; word-break: keep-all; }
+.review-card span { display: block; margin-top: 12px; font-size: 13px; color: var(--dim); font-weight: 700; }
+
+.link-list { display: grid; gap: 12px; max-width: 560px; }
+.link-btn {
+  display: block;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 22px;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+.link-btn:hover { transform: translateY(-2px); border-color: var(--green); }
+.link-btn.primary { background: var(--green); border-color: var(--green); }
+.link-btn.primary .lb-title, .link-btn.primary .lb-sub { color: #fff; }
+.link-btn.primary .lb-sub { opacity: 0.9; }
+.link-btn .lb-title { display: block; font-size: 16px; font-weight: 800; }
+.link-btn .lb-sub { display: block; font-size: 13px; color: var(--dim); margin-top: 3px; }
+
 /* ---------- 반응형 ---------- */
 @media (max-width: 900px) {
   .detail-grid { grid-template-columns: 1fr; }
   .instructor-card { position: static; }
-  .classroom { grid-template-columns: 1fr; }
-  .class-sidebar { border-right: none; border-bottom: 1px solid var(--line); max-height: 40vh; }
-  .class-main { padding: 22px 20px 50px; }
+  /* 강의실 — 모바일에선 영상을 먼저 보여주고, 강의 목록은 아래로 */
+  .classroom { grid-template-columns: 1fr; min-height: 0; }
+  .class-main { order: 1; padding: 20px 16px 40px; }
+  .class-sidebar {
+    order: 2;
+    max-height: none;               /* 40vh 고정 박스가 만들던 빈 공간 제거 */
+    border-right: none;
+    border-top: 1px solid var(--line);
+    border-bottom: none;
+    padding-top: 8px;
+  }
   .admin-course .row { grid-template-columns: 1fr; }
   .admin-lecture-row { grid-template-columns: 1fr 70px 1fr 32px; }
-  #siteHeader nav a { padding: 8px 8px; font-size: 14px; }
-  .header-inner { gap: 12px; }
+}
+
+/* 관리자 강의 편집 — 좁은 화면에선 칸을 세로로 풀어 입력 가능하게 */
+@media (max-width: 620px) {
+  .admin-lecture-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .admin-lecture-row input[data-f="ltitle"] { flex: 1 1 100%; }
+  .admin-lecture-row input[data-f="dur"] { flex: 0 0 76px; }
+  .admin-lecture-row input[data-f="url"] { flex: 1 1 auto; min-width: 0; }
+  .admin-lecture-row button[data-act="del-lecture"] { flex: 0 0 30px; }
+  .admin-block { padding: 18px 16px; }
+}
+
+/* 태블릿·모바일 헤더 — 메뉴가 넘치지 않게 재배치 */
+@media (max-width: 720px) {
+  .header-inner {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 12px 16px;
+  }
+  .logo { font-size: 19px; }
+  .user-area { margin-left: auto; }        /* 로고와 같은 줄, 오른쪽 정렬 */
+  .user-name { font-size: 13px; padding: 6px 6px; }
+  .user-chip { padding: 6px 12px; font-size: 13px; }
+  #siteHeader nav {
+    order: 3;
+    width: 100%;
+    flex: 0 0 100%;
+    gap: 2px;
+    overflow-x: auto;             /* 항목이 많아도 가로 스크롤 */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  #siteHeader nav::-webkit-scrollbar { display: none; }
+  #siteHeader nav a {
+    padding: 7px 12px;
+    font-size: 14px;
+    white-space: nowrap;          /* "코치 소개"가 두 줄로 깨지지 않게 */
+    flex: 0 0 auto;
+  }
+}
+
+/* 폰 가독성 — 글씨를 조금 키우고 줄간격·여백을 넉넉하게 */
+@media (max-width: 600px) {
+  body { line-height: 1.75; }
+  .hero p.lead { font-size: 16px; line-height: 1.85; }
+  .story p { font-size: 16px; line-height: 1.9; margin-top: 16px; }
+  .about-tagline { font-size: 17px; line-height: 1.6; }
+  .course-hero .tagline { font-size: 16px; line-height: 1.75; }
+  .course-hero .meta-row { gap: 8px 14px; font-size: 14px; }
+  .outcome-list li { font-size: 15.5px; line-height: 1.65; padding: 14px 16px; }
+  .curr-lecture { font-size: 15px; padding: 13px 16px; }
+  .card-body h3 { font-size: 17px; }
+  .card-body p { font-size: 14.5px; line-height: 1.65; }
+  .card-meta, .card-meta .price { font-size: 14px; }
+  .value-card p { font-size: 15px; line-height: 1.75; }
+  .review-card p { font-size: 15px; line-height: 1.75; }
+  .comment p, .post-detail .p-body { font-size: 15.5px; line-height: 1.8; }
+  .comment .c-head { font-size: 13.5px; }
+  .detail-main h2, .about-section > h2 { font-size: 22px; }
+  #siteFooter .footer-inner p { font-size: 13.5px; line-height: 1.7; }
+  .instructor-card ul { font-size: 14.5px; }
+}
+
+/* 아주 좁은 화면 */
+@media (max-width: 380px) {
+  .hero h1 { font-size: 26px; }
+  .about-hero h1 { font-size: 28px; }
+  .stat-strip .stat { min-width: 110px; }
 }

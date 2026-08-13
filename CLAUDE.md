@@ -79,7 +79,7 @@
 |------|-----|
 | 예약 정의 | `_analytics/com.bulkfarmer.weekly-report.plist` |
 | 실행 프롬프트 | `_analytics/weekly_report_prompt.txt` |
-| 실행 로그 | `_analytics/cron.log` / `cron.err.log` |
+| 실행 로그 | `~/Library/Logs/bulkfarmer/` (2026-08-07 이전은 `_analytics/cron.log`) |
 | 상태 확인 | `launchctl list \| grep bulkfarmer` |
 | 즉시 실행 | `launchctl start com.bulkfarmer.weekly-report` |
 | 중지 | `launchctl unload ~/Library/LaunchAgents/com.bulkfarmer.weekly-report.plist` |
@@ -91,7 +91,7 @@
 | 작업 | 주기 | 정의 파일 | 하는 일 |
 |------|------|----------|---------|
 | `weekly-report` | 월 09:07 | `_analytics/com.bulkfarmer.weekly-report.plist` | 4채널 수집 → 리포트 → 텔레그램 요약 |
-| `threads-draft` | 매일 08:13 | `_threads/com.bulkfarmer.threads-draft.plist` | 스레드 초안 8개 → 텔레그램 승인 요청 (3~5개 승인) |
+| `threads-draft` | 매일 08:13 (+4회 재시도) | `_threads/com.bulkfarmer.threads-draft.plist` | 스레드 초안 8개 → 카피 점검 5단 → 텔레그램 승인 요청 + 검수 보고 |
 | `threads-worker` | 5분마다 | `_threads/com.bulkfarmer.threads-worker.plist` | 승인된 초안만 발행 → 이력 기록 |
 
 `threads-worker`는 이름과 달리 **승인 버튼 전체**를 처리한다 — 스레드(`pub`/`del`)와
@@ -108,23 +108,111 @@
 | `현황`이라고 보내면 | 📋 오늘 발행 목록 + 예약 시각 + 미승인 초안 수 |
 
 ```
-상태 확인   launchctl list | grep bulkfarmer
+상태 확인   launchctl print gui/$(id -u)/com.bulkfarmer.{작업명} | grep "last exit"
 즉시 실행   launchctl start com.bulkfarmer.{작업명}
 중지       launchctl unload ~/Library/LaunchAgents/com.bulkfarmer.{작업명}.plist
+로그       ~/Library/Logs/bulkfarmer/
 ```
+
+> **`launchctl list`의 두 번째 숫자를 종료 코드로 믿지 않는다.** 실제 값은
+> `launchctl print`의 `last exit code`다. 2026-08-07에 `list`가 120을 보여줘
+> 엉뚱한 데를 팠다.
+
+### ⚠️ 이 폴더는 아이클라우드 동기화 대상이다 (2026-08-07 사고)
+
+데스크톱 iCloud 동기화가 켜져 있어, 자주 안 쓰는 파일의 내용을 서버로 걷어가고
+로컬에는 껍데기(`dataless`)만 남긴다. **그 파일에 쓰려고 하면
+`OSError: [Errno 11] Resource deadlock avoided`가 난다.**
+
+2026-08-07에 `published.md`가 걷혀 있었고, 발행 직후 이력을 적다가 죽으면서
+상태 저장이 통째로 건너뛰어졌다. 그래서 같은 글이 **3번 발행**됐다.
+
+| 조치 | 내용 |
+|------|------|
+| 순서 | 발행 후 **상태 저장을 가장 먼저** 한다. 이력·알림은 그다음 |
+| 저장 | `safe_write()` — 임시파일 + 원자적 교체 + 5회 재시도 |
+| 실패 시 | 상태 저장이 끝내 실패하면 **워커가 스스로 멈추고** 텔레그램으로 알린다 |
+| 로그 | `~/Library/Logs/bulkfarmer/` — 동기화 밖으로 뺐다 |
+| 실행 상태 | `~/Library/Application Support/bulkfarmer/state.json` — 매 분 읽고 쓰므로 동기화 밖 |
+
+**파일 상태 확인**: `ls -lO 파일명` → `dataless`가 보이면 걷혀 있는 것.
+**되살리기**: `brctl download 파일명`
+
+새 자동화를 만들 때 **쓰기가 잦은 파일을 이 폴더 안에 두지 않는다.**
+
+### ⚠️ 네트워크가 없을 때를 반드시 설계한다 (2026-08-11 사고)
+
+맥이 깨어난 직후·회선이 흔들릴 때 자동화가 통째로 날아간다.
+2026-08-11 아침에 40분 넘게 DNS·502·타임아웃이 이어졌고, **그날 초안이 아예 없었다.**
+
+새 자동화를 만들 때 아래 세 가지를 반드시 넣는다.
+
+| 원칙 | 왜 |
+|---|---|
+| **하루 한 번에 걸지 않는다** | 그 시각에 네트워크가 없으면 그날이 통째로 없어진다. 예약을 여러 번 걸고, 맨 앞에서 **결과물이 이미 있으면 즉시 종료**시킨다 |
+| **실패 알림도 재시도한다** | 알림은 실패한 것과 **같은 네트워크**를 쓴다. 2026-08-11에는 "실패했다"는 알림조차 못 나가서 사용자가 직접 발견했다 |
+| **한 채널이 죽어도 나머지는 돌린다** | 텔레그램이 죽었다고 Threads 발행까지 멈출 이유가 없다. 워커는 `getUpdates` 실패해도 예약분은 계속 내보낸다 |
+
+`threads-draft`는 이 원칙대로 **08:13 · 09:33 · 11:13 · 14:13 · 18:13** 다섯 번 예약돼 있다.
+앞선 회차가 성공하면 나머지는 파일을 보고 즉시 끝난다. 18시까지 다 실패했을 때만 크게 알린다.
+
+**오라클 서버 이전 (24시간 운영) — 2026-08-13 완료.** 자동화 전체가 오라클 서버
+(129.225.145.217, 오사카, A1 4코어/24GB)에서 돌아간다. 맥 launchd는 unload 상태로
+백업이다. 서버는 launchd 대신 cron이며, 서버 전용 규칙은 CLAUDE.local.md(비커밋),
+이전 킷·복귀 절차는 `_server/README.md`에 있다. **맥과 서버 워커 동시 가동 금지.**
+
+### AI 조직 (2026-08-13 발족)
+
+12팀 조직이 서버에서 요일 리듬으로 가동된다. **조직도·감시 구조·권한 매트릭스는
+`_org/charter.md`가 원본이다** — 자동 세션·수동 세션 모두 작업 전에 읽는다.
+
+| 리듬 | 팀 |
+|---|---|
+| 매일 | 기획(07:30 브리핑) → 스레드(08:13) → 검수(08:40) → 벤치마킹(09:00) → 마감 보고(21:30) |
+| 요일 | 화 강의기획 / 수 카드뉴스 / 목 릴스 / 금 블로그 / 토 홈페이지+개발 제안 / 일 성장 회의 / 월 성과 리포트 |
+| 요청 시 | 전환·DM(sales-copywriter) / 후기 자산화(student-story) |
+
+팀 프롬프트는 `_org/prompts/`, 지시서는 `_org/briefs/`, 제안서는 `_org/proposals/`.
+실행은 `_server/org_task.sh`(cron)가 담당한다.
 
 **데이터 수집 현황**
 
 | 채널 | 자동화 | 비고 |
 |------|--------|------|
 | 유튜브 | ✅ 전수 | yt-dlp |
-| 인스타그램 | ✅ 전수 | Instagram Graph API (팔로워 2,017) |
+| 인스타그램 | ⚠️ **과소 집계** | `bulk_farmer` 팔로워 **1,929**. **공동 작업자 게시물이 API에 안 잡힌다** — 아래 |
 | 스레드 | ✅ 전수 | Threads API (팔로워 354) |
 | 틱톡 | ⚠️ 약 48% | yt-dlp, 표본용 |
 | 네이버 블로그 | ❌ 수동 | **글쓰기 API 2020-05-06 종료.** 붙여넣기 발행 — `_blog/README.md` |
 | **전환 지표** | ❌ 수동 | DM 문의·유입경로·등록 — `_analytics/manual_input.md` 3번 표 |
 
 전환 지표는 DM 대화에서 나오는 값이라 API로 얻을 수 없다. **주 1분 입력이 필요하다.**
+
+### ⚠️ 인스타 계정이 두 개고, 한쪽이 안 보인다 (2026-08-13 발견)
+
+| 핸들 | 팔로워 | 역할 | API |
+|---|---|---|---|
+| `bulk_farmer` (밑줄 1개) | 1,929 | 본계정 | ✅ 토큰 있음 |
+| `bulk__farmer` (밑줄 2개) | 222 | **유튜브 쇼츠 재업로드 전용** | ❌ 토큰 없음 |
+
+**두 계정은 공동 작업자로 묶여 있다.** 서브가 올린 릴스가 본계정 그리드에도 뜬다.
+그런데 **Graph API `/media`는 소유자 게시물만 준다.** 공동 작업자로 올라온 건 안 나온다.
+
+```
+본계정 공개 그리드   8/12 · 8/10 릴스 있음
+Graph API           8/04이 마지막      ← 8일치가 통째로 안 보인다
+```
+
+**그래서 `_analytics/*.md`의 인스타 수치는 전부 과소 집계다.**
+"릴스 중앙값 286 vs 피드 133"(2026-08-03)도, 그걸 근거로 한 포맷 배분 변경도
+공동 작업자 릴스를 뺀 표본이다. **다시 검증해야 한다.**
+
+**"며칠째 발행 0건" 같은 판단을 API 하나로 내리지 않는다.** 2026-08-13에 이 이유로
+"인스타 9일 공백"이라고 잘못 보고했다. 공개 프로필을 같이 확인한다.
+
+**해결:** 서브 계정으로 로그인해 토큰을 받아 `IG2_USER_ID` / `IG2_TOKEN`을
+`~/.config/bulkfarmer/meta.env`에 추가하면 그 게시물과 인사이트를 소유자 권한으로 받는다.
+사용자만 할 수 있다.
 
 **자격증명** — 전부 저장소 밖, 권한 600
 ```
@@ -295,11 +383,12 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 4. 콘텐츠 작성
    → 첫 문장/첫 3초에 훅 배치 (독자·시청자 상황 직접 언급)
+   → 첫 줄은 `_context/first_line_hooks.md` 12패턴 중 선택 + 체크리스트 통과 필수
    → 트레이너 개인 경험 필수 포함
    → 마무리는 희망 또는 행동 촉구
 
 5. 채널별 최적화 확인
-   [스레드] 단문·단락, 해시태그 1~2개 이내
+   [스레드] 단문·단락, **해시태그 쓰지 않음** (2026-08-11 실측 — 붙인 14건 전부 코치가 지웠다)
    [인스타그램] 슬라이드 1장 = 1메시지, 세이지 그린+살구 핑크 교대
    [숏폼 공통] 훅·본문 내용 일치 필수, 굵은 자막 전 구간 삽입, 루프 구조 설계
    [유튜브 쇼츠] 60초 이내, APV 70% 목표, 해시태그 3개 이내
@@ -307,7 +396,10 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
    [틱톡] 15~60초, 낚시성 훅 절대 금지
    [유튜브 롱폼] 20분 초과 금지, 마무리에 코칭 링크 + 다음 영상 예고
 
-6. 고객 전환 단계 확인
+6. 발행 전 최종 점검 (전 채널 공통)
+   → `_context/human_tone_guide.md` 1·2단계 — 뻔한 표현 40개 표 대조 + 구조 티 제거
+
+7. 고객 전환 단계 확인
    인지 → 관심 → 고민 → 신뢰 → 전환
 ```
 
@@ -477,6 +569,12 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 5. `_template/threads_template.md` — 스레드 유형별 구조 참조
 6. `_context/shortform_agent.md` — 숏폼(쇼츠·릴스·틱톡) 제작 시
 7. `_context/card_news_agent.md` — 카드뉴스 HTML 출력 및 피그마 임포트 시
+7-1. `_context/first_line_hooks.md` — 모든 채널 첫 문장·첫 3초 훅 작성 시 (12패턴 × 체크리스트)
+7-2. `_context/sns_copy_guide.md` — 본문 4블록 구조·감정 단어 60·캐러셀 설계·플랫폼별 차이
+7-3. `_context/reels_script_guide.md` — 릴스·쇼츠 대본 형식 (초 단위 2열, 상투 금지, 컷 감각)
+7-4. `_context/human_tone_guide.md` — AI 티 걷어내기 (전 채널 발행 전 최종 점검)
+7-5. `_context/real_review_guide.md` — 리얼 후기 대본 (F주제 후기 릴스·수강생 인터뷰 영상)
+7-6. `_context/title_voice_guide.md` — 숏폼 화면 제목·유튜브 제목·첫 줄 보이스 (실발행 제목 코퍼스 기준, AI 티 금지 목록)
 8. `_context/design_style_guide.md` — 시각 디자인 규칙
 9. `_context/youtube_strategy.md` — 유튜브 기획 및 성과 기반 의사결정
 10. `_context/competitor_reference.md` — 같은 업계 채널 구조 분석 (제목·훅·연재 패턴)

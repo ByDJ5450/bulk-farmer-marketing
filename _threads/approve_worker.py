@@ -14,7 +14,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 PENDING = ROOT / "pending"
-STATE = ROOT / "state.json"
+# 실행 상태는 저장소(=아이클라우드 동기화 대상) 밖에 둔다.
+# 매 분 읽고 쓰는 파일이라 dataless 로 걷히면 워커가 통째로 멈춘다. (2026-08-07)
+# 리눅스 서버에는 아이클라우드가 없지만 같은 원칙(저장소 밖 보관)으로 XDG 경로를 쓴다.
+STATE_DIR = (Path.home() / "Library/Application Support/bulkfarmer"
+             if sys.platform == "darwin" else Path.home() / ".local/state/bulkfarmer")
+STATE_DIR.mkdir(parents=True, exist_ok=True)
+STATE = STATE_DIR / "state.json"
+_OLD_STATE = ROOT / "state.json"
+if not STATE.exists() and _OLD_STATE.exists():          # 한 번만 이관된다
+    STATE.write_text(_OLD_STATE.read_text(encoding="utf-8"), encoding="utf-8")
 LOG = ROOT / "published.md"
 
 # 승인 버튼을 연달아 누르면 글이 한 뭉텅이로 나간다. 스레드는 그걸 싫어하고,
@@ -22,6 +31,26 @@ LOG = ROOT / "published.md"
 # 이 간격을 두고 워커가 한 건씩 내보낸다. (워커는 5분마다 돈다)
 PUBLISH_GAP = timedelta(minutes=100)
 WINDOW = (8, 23)   # 이 시간대에만 발행한다 (로컬 시각)
+
+
+def safe_write(path, text, tries=5):
+    """발행 상태 저장은 실패하면 안 된다.
+
+    이 폴더는 데스크톱(아이클라우드 동기화 대상) 아래에 있어서, 동기화가 파일을
+    붙들고 있는 순간 쓰기가 OSError(Errno 11, Resource deadlock avoided)로 튄다.
+    2026-08-07에 이것 때문에 발행 직후 상태 저장이 죽었고, 같은 글이 세 번 나갔다.
+    임시 파일에 쓰고 원자적으로 바꿔치우며, 실패하면 잠깐 쉬었다 다시 시도한다.
+    """
+    p = Path(path)
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    for i in range(tries):
+        try:
+            tmp.write_text(text, encoding="utf-8")
+            os.replace(tmp, p)
+            return True
+        except OSError:
+            time.sleep(0.4 * (i + 1))
+    return False
 
 
 def load_env(path):
@@ -227,7 +256,7 @@ def handle_cardnews(action, slug, cq, cid, mid):
             tg("editMessageText", chat_id=cid, message_id=mid,
                text=f"❌ 카드뉴스 발행 실패 — {slug}\n{out[-500:]}")
 
-    rec.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+    safe_write(rec, json.dumps(doc, ensure_ascii=False, indent=2))
 
 
 def approved_queue():
@@ -276,7 +305,6 @@ def drain_queue(st):
         draft["status"] = "published"
         draft["post_id"] = res
         draft["published_at"] = now.isoformat(timespec="minutes")
-        record(draft, res)
         st["last_publish_at"] = now.isoformat()
         text = f"✅ 발행 완료 {now:%H:%M}\n\n{draft['text']}"
     else:
@@ -284,11 +312,25 @@ def drain_queue(st):
         draft["error"] = res
         text = f"❌ 발행 실패\n{res}\n\n{draft['text']}"
 
+    # **글이 이미 나간 뒤다. 상태 저장이 무엇보다 먼저다.**
+    # 여기서 실패하면 다음 실행이 같은 초안을 또 발행한다. 알림·이력 기록보다 앞에 둔다.
+    saved = safe_write(f, json.dumps(doc, ensure_ascii=False, indent=2))
+    saved &= safe_write(STATE, json.dumps(st, indent=2))
+    if not saved:
+        notify("🚨 스레드 상태 저장 실패 — 워커를 멈춥니다\n"
+               "그대로 두면 같은 글이 반복 발행됩니다.\n"
+               "`launchctl unload ~/Library/LaunchAgents/com.bulkfarmer.threads-worker.plist`")
+        sys.exit("상태 저장 실패 — 중복 발행을 막기 위해 중단")
+
+    if ok:
+        try:
+            record(draft, res)
+        except OSError as e:
+            # 이력 기록은 부수적이다. 실패해도 발행 흐름을 멈추지 않는다.
+            notify(f"⚠️ 발행 이력 기록 실패 (발행 자체는 성공) — {e}")
+
     if cid and mid:
         tg("editMessageText", chat_id=cid, message_id=mid, text=text)
-
-    f.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
-    STATE.write_text(json.dumps(st, indent=2), encoding="utf-8")
 
     # 원본 메시지를 고치는 것만으로는 알 수가 없다. 그 메시지는 채팅 위로 올라가 있다.
     # 발행될 때마다 **새 알림**을 보낸다. 다음 예약 시각까지 같이 알려서
@@ -330,11 +372,50 @@ HELP = """🤖 텔레그램 명령
 def handle_message(msg):
     """텔레그램 텍스트 처리. 짧은 건 즉답, 나머지는 claude에게 넘긴다."""
     cid = msg["chat"]["id"]
-    text = str(msg.get("text", "")).strip()
+    # 영상·사진에 캡션만 달려 와도 본문으로 취급한다 (2026-08-13 — 제보 유실 사고)
+    text = str(msg.get("text") or msg.get("caption") or "").strip()
 
     # 이 봇은 저장소 전체에 쓰기 권한이 있는 실행 통로다.
     # 등록된 chat_id 외에는 무엇도 실행하지 않는다.
-    if str(cid) != str(TG.get("TELEGRAM_CHAT_ID")):
+    # 제보 전용 방(TELEGRAM_REPORT_CHAT_ID)의 메시지는 벤치마킹 해부로 라우팅한다.
+    kind = "task"
+    if str(cid) == str(TG.get("TELEGRAM_REPORT_CHAT_ID") or "none"):
+        kind = "benchmark"
+    elif str(cid) != str(TG.get("TELEGRAM_CHAT_ID")):
+        # 미등록 채팅은 실행하지 않되, 새 제보방 등록을 위해 id만 남긴다
+        try:
+            with (ROOT.parent / "_telegram" / "unknown_chats.log").open("a", encoding="utf-8") as fh:
+                fh.write(f"{datetime.now():%F %H:%M}\t{cid}\t{msg['chat'].get('title') or msg['chat'].get('username','')}\n")
+        except Exception:
+            pass
+        return
+
+    if kind == "benchmark":
+        if not text:
+            # 캡션 없는 영상·사진 제보. 예전엔 조용히 버렸다 (2026-08-13 유실 사고).
+            # 봇은 20MB 넘는 영상을 못 받으므로, 버리지 않고 즉시 되물어본다.
+            media = [k for k in ("video", "document", "photo", "video_note") if k in msg]
+            if media:
+                try:
+                    with (TELEGRAM / "report_dropped.log").open("a", encoding="utf-8") as fh:
+                        fh.write(f"{datetime.now():%F %H:%M}\t{msg['message_id']}\t{media}\n")
+                except Exception:
+                    pass
+                tg("sendMessage", chat_id=cid, reply_to_message_id=msg["message_id"],
+                   text="📎 파일만으로는 접수가 안 됩니다. 원본 링크(유튜브·릴스·틱톡)를 "
+                        "보내주시거나, 파일에 캡션 한 줄을 붙여 다시 보내주세요.")
+            return
+        import subprocess
+        q = TELEGRAM / "queue"
+        q.mkdir(parents=True, exist_ok=True)
+        f = q / f"bench_{msg['message_id']}.json"
+        f.write_text(json.dumps({"text": text, "chat_id": cid, "kind": "benchmark"},
+                                ensure_ascii=False), encoding="utf-8")
+        tg("sendMessage", chat_id=cid, text="🔍 접수 — 해부해서 회신드립니다")
+        subprocess.Popen(
+            ["/usr/bin/python3", str(TELEGRAM / "run_command.py"), str(f)],
+            cwd=str(ROOT.parent), start_new_session=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return
 
     if text in ("현황", "상태", "/status"):
@@ -366,7 +447,7 @@ def daily_wrapup(st):
     if now.hour < WINDOW[1] or st.get("wrapup_date") == today:
         return
     st["wrapup_date"] = today
-    STATE.write_text(json.dumps(st, indent=2), encoding="utf-8")
+    safe_write(STATE, json.dumps(st, indent=2))
 
     published = missed = 0
     for f in PENDING.glob("*.json"):
@@ -400,8 +481,17 @@ def record(draft, post_id):
     header = "" if LOG.exists() else "# 스레드 발행 이력 (자동 기록)\n\n| 발행일 | 유형 | 주제 | 소재 요약 | 게시물 ID |\n|---|---|---|---|---|\n"
     row = (f"| {date.today()} | {draft.get('type','-')} | {draft.get('topic','-')} | "
            f"{draft.get('summary','-')} | {post_id} |\n")
-    with LOG.open("a", encoding="utf-8") as fh:
-        fh.write(header + row)
+    # 아이클라우드가 내용을 걷어간(dataless) 파일에 append 하면 OSError(Errno 11)가 난다.
+    # 몇 번 다시 시도한다. 그래도 안 되면 호출한 쪽이 경고만 보내고 넘어간다.
+    for i in range(4):
+        try:
+            with LOG.open("a", encoding="utf-8") as fh:
+                fh.write(header + row)
+            return
+        except OSError:
+            if i == 3:
+                raise
+            time.sleep(0.5 * (i + 1))
 
 
 def main():
@@ -414,7 +504,13 @@ def main():
     upd = tg("getUpdates", offset=offset, timeout=0,
              allowed_updates=json.dumps(["callback_query", "message"]))
     if not upd.get("ok"):
-        sys.exit(f"getUpdates 실패: {upd}")
+        # 텔레그램이 죽었다고 발행까지 멈출 이유는 없다. 새 버튼 입력만 못 받을 뿐,
+        # 이미 승인해둔 예약분은 Threads API만 살아 있으면 나가야 한다.
+        # 2026-08-11에 텔레그램이 40분 넘게 502/타임아웃이었고, 그동안 예약분도 멈춰 있었다.
+        print(f"getUpdates 실패(예약분은 계속 처리): {upd}", file=sys.stderr)
+        drain_queue(st)
+        daily_wrapup(st)
+        return
 
     results = upd.get("result", [])
     if not results:
@@ -479,10 +575,10 @@ def main():
             tg("answerCallbackQuery", callback_query_id=cq["id"], text="알 수 없는 동작")
             continue
 
-        f.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+        safe_write(f, json.dumps(doc, ensure_ascii=False, indent=2))
 
     st["last_update_id"] = last
-    STATE.write_text(json.dumps(st, indent=2), encoding="utf-8")
+    safe_write(STATE, json.dumps(st, indent=2))
     drain_queue(st)
     daily_wrapup(st)
 

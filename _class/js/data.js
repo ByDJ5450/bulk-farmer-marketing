@@ -7,8 +7,8 @@ window.SEED = {
   courses: [
     {
       id: 'starter',
-      title: '멸치 탈출 스타터 — 벌크업 기초 4강',
-      thumbTitle: '멸치 탈출\n스타터',
+      title: '마른 몸 탈출 스타터 — 벌크업 기초 4강',
+      thumbTitle: '마른 몸 탈출\n스타터',
       tagline: '벌크업을 시작하기 전에 반드시 알아야 할 원리만 골라 담은 무료 입문 강의입니다.',
       badge: '무료 공개',
       color: 'green',
@@ -27,7 +27,7 @@ window.SEED = {
           title: '오리엔테이션',
           lectures: [
             { id: 'st-l1', title: '벌크업이 안 되는 진짜 이유', duration: '7:42', videoUrl: '' },
-            { id: 'st-l2', title: '55kg 멸치가 88kg이 되기까지', duration: '9:18', videoUrl: '' }
+            { id: 'st-l2', title: '55kg에서 88kg이 되기까지', duration: '9:18', videoUrl: '' }
           ]
         },
         {
@@ -163,7 +163,7 @@ window.SEED = {
       id: 'seed-p1',
       cat: 'notice',
       title: '벌크농부 클래스 오픈 안내',
-      body: '벌크농부 온라인 클래스를 시작합니다.\n\n- 무료 강의: 멸치 탈출 스타터 4강 (지금 바로 수강 가능)\n- 질문은 각 강의 아래 댓글, 또는 커뮤니티 질문 게시판에 남겨주세요. 전부 답합니다.\n- 1:1 코칭 문의는 인스타그램 @bulk_farmer DM으로 주세요.\n\n55kg에서 88kg까지 온 과정을 그대로 나누겠습니다.',
+      body: '벌크농부 온라인 클래스를 시작합니다.\n\n- 무료 강의: 마른 몸 탈출 스타터 4강 (지금 바로 수강 가능)\n- 질문은 각 강의 아래 댓글, 또는 커뮤니티 질문 게시판에 남겨주세요. 전부 답합니다.\n- 1:1 코칭 문의는 인스타그램 @bulk_farmer DM으로 주세요.\n\n55kg에서 88kg까지 온 과정을 그대로 나누겠습니다.',
       name: '동진 코치',
       coach: true,
       ts: Date.now() - 1000 * 60 * 60 * 72,

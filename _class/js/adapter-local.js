@@ -83,7 +83,7 @@ var LocalAPI = (function () {
     return email ? findUser(email) : null;
   }
   function pub(u) {
-    return u ? { id: u.id, name: u.name, email: u.email, role: u.role } : null;
+    return u ? { id: u.id, name: u.name, email: u.email, role: u.role, joined: u.joined } : null;
   }
 
   /* ----- 공개 API ----- */
@@ -139,6 +139,36 @@ var LocalAPI = (function () {
       return Promise.resolve();
     },
 
+    updateName: function (name) {
+      var u = sessionUser();
+      if (!u) return Promise.resolve({ ok: false, msg: '로그인이 필요합니다.' });
+      name = String(name).trim();
+      if (name.length < 2) return Promise.resolve({ ok: false, msg: '이름(닉네임)은 2자 이상 입력해주세요.' });
+      var dup = users().some(function (x) { return x.name === name && x.email !== u.email; });
+      if (dup) return Promise.resolve({ ok: false, msg: '이미 사용 중인 이름입니다.' });
+      var list = users();
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].email === u.email) { list[i].name = name; break; }
+      }
+      saveUsers(list);
+      return Promise.resolve({ ok: true });
+    },
+
+    updatePassword: function (pw) {
+      var u = sessionUser();
+      if (!u) return Promise.resolve({ ok: false, msg: '로그인이 필요합니다.' });
+      if (String(pw).length < 6) return Promise.resolve({ ok: false, msg: '비밀번호는 6자 이상이어야 합니다.' });
+      var salt = uid();
+      return hashPw(pw, salt).then(function (hash) {
+        var list = users();
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].email === u.email) { list[i].salt = salt; list[i].hash = hash; break; }
+        }
+        saveUsers(list);
+        return { ok: true };
+      });
+    },
+
     /* 강의 */
     courses: function () { return Promise.resolve(db.courses); },
 
@@ -167,11 +197,49 @@ var LocalAPI = (function () {
     enroll: function (courseId) {
       var u = sessionUser();
       if (!u) return Promise.reject(new Error('로그인이 필요합니다'));
+      // 유료 강의는 스스로 수강 불가 (코치는 예외 — 미리보기용)
+      var c = null;
+      for (var i = 0; i < db.courses.length; i++) { if (db.courses[i].id === courseId) { c = db.courses[i]; break; } }
+      var paid = c && Number(c.price) > 0;
+      if (paid && u.role !== 'coach') {
+        return Promise.reject(new Error('이 강의는 결제 또는 코치 승인 후 수강할 수 있습니다.'));
+      }
       if (!db.enrollments[u.email]) db.enrollments[u.email] = [];
       if (db.enrollments[u.email].indexOf(courseId) < 0) {
         db.enrollments[u.email].push(courseId);
         save();
       }
+      return Promise.resolve();
+    },
+
+    /* 코치용 — 회원별 수강 권한 부여/회수 */
+    allEnrollments: function () {
+      var out = [];
+      var byEmail = {};
+      users().forEach(function (x) { byEmail[x.email] = x.id; });
+      Object.keys(db.enrollments).forEach(function (email) {
+        (db.enrollments[email] || []).forEach(function (cid) {
+          out.push({ user_id: byEmail[email] || email, course_id: cid });
+        });
+      });
+      return Promise.resolve(out);
+    },
+    grantEnrollment: function (userId, courseId) {
+      var user = users().filter(function (x) { return x.id === userId; })[0];
+      if (!user) return Promise.reject(new Error('회원을 찾을 수 없습니다'));
+      if (!db.enrollments[user.email]) db.enrollments[user.email] = [];
+      if (db.enrollments[user.email].indexOf(courseId) < 0) {
+        db.enrollments[user.email].push(courseId);
+        save();
+      }
+      return Promise.resolve();
+    },
+    revokeEnrollment: function (userId, courseId) {
+      var user = users().filter(function (x) { return x.id === userId; })[0];
+      if (!user) return Promise.resolve();
+      var arr = db.enrollments[user.email] || [];
+      var i = arr.indexOf(courseId);
+      if (i >= 0) { arr.splice(i, 1); save(); }
       return Promise.resolve();
     },
 
@@ -229,6 +297,7 @@ var LocalAPI = (function () {
         title: title,
         body: body,
         name: u.name,
+        authorId: u.id,
         coach: u.role === 'coach',
         ts: Date.now(),
         comments: []
@@ -259,7 +328,7 @@ var LocalAPI = (function () {
     /* 관리자 */
     members: function () {
       return Promise.resolve(users().map(function (u) {
-        return { name: u.name, email: u.email, role: u.role, joined: u.joined };
+        return { id: u.id, name: u.name, email: u.email, role: u.role, joined: u.joined };
       }));
     },
 
