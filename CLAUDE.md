@@ -39,6 +39,7 @@
 ├── _blog/                          # 네이버 블로그 글 — 자동 발행 불가, 붙여넣기 (README.md)
 ├── _conversion/                    # 전환 카피 산출물 (sales-copywriter)
 ├── _testimonials/                  # 수강생 후기 원자료 (student-story)
+├── _wiki/                          # LLM 위키 — 검증된 인사이트·수강생·소재은행 (규칙: _wiki/SCHEMA.md)
 ├── _template/                      # 제작 템플릿 
 │   ├── pptx_template.md            # PPT 8가지 레이아웃 패턴 + 42슬라이드 구성
 │   ├── threads_template.md         # 스레드 3가지 유형 × 6가지 주제 조합 가이드
@@ -557,6 +558,19 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 5. **트레이너 경험 포인트**: 어떤 개인 에피소드를 활용할지
 
 명시되지 않은 경우, 가장 적합한 조합을 먼저 제안하고 확인 후 제작한다.
+
+---
+
+## LLM 위키 (_wiki/) — 누적 지식층
+
+카파시 LLM Wiki 패턴. **규칙 원본은 `_wiki/SCHEMA.md`** — 위키를 만지기 전에 읽는다.
+
+- **Query**: 콘텐츠 기획 전 `_wiki/검증된-인사이트.md` + `_wiki/소재은행.md`를 먼저 읽는다.
+  성과 수치를 해석할 때는 `_wiki/채널-현황.md`의 수집 함정 표를 대조한다.
+- **Ingest**: 주간 리포트·후기·실측 발견이 들어오면 관련 위키 페이지 갱신 →
+  `index.md` 등록 → `log.md` 한 줄 기록. 위키는 원본(_analytics 등)만 인용하고, 원본은 수정하지 않는다.
+- **Lint**: 월요일 리포트 후 모순·고아 페이지·⚠️ 재검증 항목을 점검한다.
+- 사용자는 이 폴더를 옵시디언 Vault로 열어 열람한다. `.obsidian/`은 커밋하지 않는다.
 
 ---
 

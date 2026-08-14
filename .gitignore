@@ -21,3 +21,7 @@ _server/logs/
 _class/.wrangler/
 __pycache__/
 지원서_*
+
+# 옵시디언 로컬 설정 (기기별 워크스페이스·캐시)
+.obsidian/
+.trash/
