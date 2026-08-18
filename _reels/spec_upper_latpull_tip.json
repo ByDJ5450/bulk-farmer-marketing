@@ -4,19 +4,21 @@
   {
    "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/3tqxv0YAk_0.mkv",
    "start": 495.0,
-   "dur": 12.0,
-   "zoom": 1.0
+   "dur": 11.23,
+   "zoom": 1.0,
+   "hold": 0.35
   },
   {
    "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/3tqxv0YAk_0.mkv",
-   "start": 511.0,
-   "dur": 20.0,
-   "zoom": 1.07
+   "start": 511.86,
+   "dur": 24.44,
+   "zoom": 1.07,
+   "hold": 0.3
   },
   {
    "src": "/private/tmp/claude-501/-Users-idongjin-Desktop------00---------------/a6e33a25-4fcc-4445-833a-356de2280e95/scratchpad/src/3tqxv0YAk_0.mkv",
-   "start": 566.0,
-   "dur": 20.12,
+   "start": 566.53,
+   "dur": 18.25,
    "zoom": 1.0
   }
  ],

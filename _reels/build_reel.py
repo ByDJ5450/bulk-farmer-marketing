@@ -344,6 +344,18 @@ def segment(seg, idx, tmp):
     run(["ffmpeg", "-loglevel", "error", "-i", str(vid), "-i", str(aud),
          "-map", "0:v", "-map", "1:a", "-c:v", "copy",
          "-c:a", "aac", "-ar", str(SR), "-ac", "2", "-shortest", str(out), "-y"])
+
+    # 말이 끝나자마자 다음 문장이 붙어 오는 컷: 끝을 정지 프레임+무음으로 살짝
+    # 늘려서, 디졸브가 말 꼬리 대신 정지 화면 위에서 일어나게 한다
+    hold = float(seg.get("hold", 0))
+    if hold > 0:
+        held = tmp / f"seg{idx:02d}h.mp4"
+        run(["ffmpeg", "-loglevel", "error", "-i", str(out),
+             "-vf", f"tpad=stop_mode=clone:stop_duration={hold:.3f}",
+             "-af", f"apad=pad_dur={hold:.3f}",
+             "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+             "-c:a", "aac", "-ar", str(SR), "-ac", "2", str(held), "-y"])
+        return held, dur + hold
     return out, dur
 
 
