@@ -91,6 +91,12 @@
       "skillPath": "skills/hyperframes-registry/SKILL.md",
       "computedHash": "ac8a17b31cb3dcbd025e17be617a531b2be6905cb764d4b1339bca54d7bc8f33"
     },
+    "hypit": {
+      "source": "hypit-ai/hypit",
+      "sourceType": "github",
+      "skillPath": "skills/hypit/SKILL.md",
+      "computedHash": "af6b1d519754fcec9b6ee8d7806e9e5adee4bcdfd9532133448cbff48e09b4ad"
+    },
     "media-use": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
